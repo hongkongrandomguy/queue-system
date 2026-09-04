@@ -1,0 +1,106 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin 管理</title>
+<link rel="stylesheet" href="/css/style.css">
+</head><body>
+  <div class="topbar"><span>Admin 管理</span><span class="chip" id="sessChip">Session 時段 A · Next 下一籌 A001</span></div>
+  <div class="admin-wrap">
+
+    <div class="card">
+      <h3>Session 時段</h3>
+      <div class="row">
+        <input id="prefixInput" maxlength="2" style="max-width:90px" placeholder="A">
+        <button id="btnSetPrefix">Set Prefix & Reset Numbers 設定前綴並重設號碼</button>
+        <button id="btnAdvance" class="btn-green">Advance to Next Session 進入下一時段</button>
+      </div>
+      <p class="muted" style="margin-top:8px">Numbers always start from 001 in each session. 每個時段均由 001 重新開始。</p>
+    </div>
+
+    <div class="card">
+      <h3>Counters 櫃位</h3>
+      <div class="counters-admin" id="counterList"></div>
+      <div class="row">
+        <input id="newCounterName" placeholder="Counter 3" style="max-width:180px">
+        <input id="newCounterZh" placeholder="三號櫃位" style="max-width:180px">
+        <button id="btnAddCounter">Add Counter 新增櫃位</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Announcement 廣播</h3>
+      <div class="row">
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="langEn" style="width:auto">English</label>
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="langYue" style="width:auto">粵語</label>
+        <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="langZh" style="width:auto">普通話</label>
+        <label>Rate 語速<input type="number" id="ttsRate" min="0.6" max="1.5" step="0.1" style="max-width:90px"></label>
+        <label>Volume 音量<input type="number" id="ttsVol" min="0" max="1" step="0.1" style="max-width:90px"></label>
+        <label>Repeat 次數<input type="number" id="ttsRepeat" min="1" max="3" style="max-width:90px"></label>
+        <button id="btnTest" class="btn-amber" style="color:#111">Test 試播</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Texts 文字</h3>
+      <label>Title (EN)<input id="setTitle"></label>
+      <label>Subtitle (中文)<input id="setSubtitle"></label>
+      <label>Kiosk Note 取號提示<input id="setNote"></label>
+    </div>
+
+    <button id="btnSave" class="btn-green" style="padding:18px;font-size:20px">SAVE 儲存</button>
+  </div>
+  <div id="toast" class="toast"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/tts.js"></script>
+  <script>
+    onState(s => {
+      document.getElementById('sessChip').textContent =
+        `Session 時段 ${s.session.prefix} · Next 下一籌 ${s.session.prefix + String(s.session.next).padStart(3,'0')}`;
+      renderCounters();
+      const t = s.settings.tts;
+      langEn.checked = t.languages.includes('en');
+      langYue.checked = t.languages.includes('yue');
+      langZh.checked = t.languages.includes('zh');
+      ttsRate.value = t.rate; ttsVol.value = t.volume; ttsRepeat.value = t.repeat;
+      setTitle.value = s.settings.title; setSubtitle.value = s.settings.subtitle; setNote.value = s.settings.note;
+      prefixInput.placeholder = s.session.prefix;
+    });
+    function renderCounters(){
+      counterList.innerHTML = STATE.settings.counters.map(c => `
+        <div class="row">
+          <span style="min-width:110px">${c.name}</span><span class="hk" style="min-width:110px">${c.nameZh}</span>
+          <button class="btn-gray" onclick="openCounter(${c.id})">Open 開啟</button>
+          <button onclick="removeCounter(${c.id})">Remove 移除</button>
+        </div>`).join('');
+    }
+    function openCounter(id){ window.open('/counter/'+id, '_blank'); }
+    async function removeCounter(id){
+      const settings = { ...STATE.settings, counters: STATE.settings.counters.filter(c => c.id !== id) };
+      await api('/api/settings', settings);
+    }
+    btnAddCounter.onclick = async () => {
+      const name = newCounterName.value.trim() || 'Counter ' + (STATE.settings.counters.length+1);
+      const nameZh = newCounterZh.value.trim() || name;
+      const counters = [...STATE.settings.counters, { id: Date.now()%100000, name, nameZh }];
+      await api('/api/settings', { ...STATE.settings, counters });
+      newCounterName.value = newCounterZh.value = '';
+    };
+    btnSetPrefix.onclick = () => api('/api/session/prefix', { prefix: prefixInput.value });
+    btnAdvance.onclick = () => api('/api/session/advance');
+    btnTest.onclick = () => {
+      const c = STATE.settings.counters[0] || { name:'Counter 1', nameZh:'一號櫃位' };
+      announce(getLangs(), { ...STATE.settings.tts, phrases:{
+        en: buildPhrase('en','A001',c), yue: buildPhrase('yue','A001',c), zh: buildPhrase('zh','A001',c)
+      }}, true);
+    };
+    function getLangs(){ return ['en','yue','zh'].filter(l => document.getElementById({en:'langEn',yue:'langYue',zh:'langZh'}[l]).checked); }
+    btnSave.onclick = async () => {
+      await api('/api/settings', {
+        title: setTitle.value, subtitle: setSubtitle.value, note: setNote.value,
+        counters: STATE.settings.counters,
+        tts: { languages: getLangs(), rate:+ttsRate.value, volume:+ttsVol.value, repeat:+ttsRepeat.value }
+      });
+      toast('Saved 已儲存');
+    };
+  </script>
+</body></html>
