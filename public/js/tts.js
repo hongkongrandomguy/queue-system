@@ -27,8 +27,7 @@ function buildPhrase(lang, numLabel, counter){
   const digits  = numLabel.replace(/[A-Z]/g,'').split('');
   let rawId = '1';
   if (counter){
-    if (counter.id != null) rawId = String(counter.id);
-    else rawId = (counter.name || '').replace(/\D/g,'') || '1';
+    rawId = (counter.name || '').replace(/\D/g,'') || '1';
   }
   const cid = rawId.split('');
   if (lang === 'en'){
