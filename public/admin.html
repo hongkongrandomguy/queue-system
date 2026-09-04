@@ -22,8 +22,8 @@
     <h3>Counters 櫃位</h3>
     <div id="counterList"></div>
     <div class="row">
-      <input id="newCounterName" placeholder="Counter 3" style="max-width:180px">
-      <input id="newCounterZh" placeholder="三號櫃位" style="max-width:180px">
+      <input id="newCounterName" placeholder="Counter 1" style="max-width:180px">
+      <input id="newCounterZh" placeholder="一號櫃位" style="max-width:180px">
       <button id="btnAddCounter">Add Counter 新增櫃位</button>
     </div>
   </div>
@@ -62,9 +62,11 @@
 const $ = id => document.getElementById(id);
 let loaded = false;
 
-/* 3 秒仍載入不到資料 → 提示檢查 Rules／網絡 */
+/* 安全讀取櫃位列表（永遠返回陣列） */
+function counters(){ return (STATE && STATE.settings && STATE.settings.counters) || []; }
+
 setTimeout(() => {
-  if (!STATE) toast('⚠️ 無法載入資料：請檢查 Firebase Rules 或網絡連接。Cannot load data: check Firebase Rules / network.', 8000);
+  if (!STATE) toast('⚠️ 無法載入資料：請檢查 Firebase Rules 或網絡。Cannot load data: check Firebase Rules / network.', 8000);
 }, 3000);
 
 onState(s => {
@@ -85,8 +87,7 @@ onState(s => {
   }
 });
 function renderCounters(){
-  const cs = (STATE.settings && STATE.settings.counters) || [];
-  $('counterList').innerHTML = cs.map(c => `
+  $('counterList').innerHTML = counters().map(c => `
     <div class="row">
       <span style="min-width:110px">${c.name}</span><span class="hk" style="min-width:110px">${c.nameZh}</span>
       <a href="counter.html?id=${c.id}" target="_blank"><button class="btn-gray">Open 開啟</button></a>
@@ -98,14 +99,15 @@ async function removeCounter(id){
   if (!guard()) return;
   const c = counterById(id);
   if (!confirm(`Remove ${c.name} ${c.nameZh}?\n移除${c.name} ${c.nameZh}？`)) return;
-  await saveSettings({ ...STATE.settings, counters: STATE.settings.counters.filter(x => x.id !== id) });
+  await saveSettings({ ...STATE.settings, counters: counters().filter(x => x.id !== id) });
   toast('Removed 已移除');
 }
 $('btnAddCounter').onclick = async () => {
   if (!guard()) return;
-  const name = $('newCounterName').value.trim() || 'Counter ' + (STATE.settings.counters.length + 1);
+  const cs = counters();
+  const name = $('newCounterName').value.trim() || 'Counter ' + (cs.length + 1);
   const nameZh = $('newCounterZh').value.trim() || name;
-  await saveSettings({ ...STATE.settings, counters: [...STATE.settings.counters, { id: Date.now() % 100000, name, nameZh }] });
+  await saveSettings({ ...STATE.settings, counters: [...cs, { id: Date.now() % 100000, name, nameZh }] });
   $('newCounterName').value = $('newCounterZh').value = '';
   toast('Added 已新增');
 };
@@ -128,7 +130,7 @@ $('btnAdvance').onclick = () => {
 function getLangs(){ return ['en','yue','zh'].filter(l => ({en:$('langEn'), yue:$('langYue'), zh:$('langZh')})[l].checked); }
 $('btnTest').onclick = () => {
   if (!guard()) return;
-  const c = STATE.settings.counters[0] || { name:'Counter 1', nameZh:'一號櫃位' };
+  const c = counters()[0] || { name:'Counter 1', nameZh:'一號櫃位' };
   announce(getLangs(), { ...STATE.settings.tts, phrases: {
     en:  buildPhrase('en',  'A001', c),
     yue: buildPhrase('yue', 'A001', c),
@@ -142,7 +144,7 @@ $('btnSave').onclick = async () => {
     title: $('setTitle').value,
     subtitle: $('setSubtitle').value,
     note: $('setNote').value,
-    counters: STATE.settings.counters,
+    counters: counters(),
     avgMinutes: +$('avgMinutes').value || 3,
     tts: { languages: getLangs(), rate:+$('ttsRate').value, volume:+$('ttsVol').value, repeat:+$('ttsRepeat').value }
   });
