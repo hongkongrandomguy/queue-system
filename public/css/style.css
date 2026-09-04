@@ -107,10 +107,10 @@ input,select{width:100%; padding:10px; border-radius:10px; border:1px solid #d1d
 .waiting-list .called-chip.cur{background:#f59e0b; border-color:#f59e0b; color:#fff;}
 /* 彩色按鈕上嘅中文細字改用半透明白，確保清晰 */
 button .hk{color:rgba(255,255,255,.85);}
-/* 已叫號區：每櫃位一格（大屏幕用，唔好放入 print block） */
-.call-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; align-content:start;}
-.call-item{text-align:center; padding:28px 12px; border-radius:14px; background:#182642;}
-.call-item .ci-name{font-size:26px; font-weight:600; color:#8fa3c8;}
-.call-item .ci-name .hk{color:#8fa3c8;}
-.call-item .ci-num{font-size:clamp(64px,6.5vw,120px); font-weight:800; letter-spacing:4px; margin-top:10px; line-height:1;}
+/* 已叫號區：每櫃位一格（大屏幕用） */
+.call-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; align-content:start;}
+.call-item{overflow:hidden; text-align:center; padding:26px 10px; border-radius:14px; background:#182642;}
+.call-item .ci-name{font-size:clamp(26px,2vw,42px); font-weight:700; color:#aecbfa; letter-spacing:1px;}
+.call-item .ci-name .hk{color:#aecbfa;}
+.call-item .ci-num{font-size:clamp(48px,4.5vw,92px); font-weight:700; letter-spacing:2px; margin-top:12px; line-height:1.1; color:#f8fafc;}
 .call-item.active .ci-num{color:#fbbf24; animation:flash 1.2s ease-in-out 6;}
