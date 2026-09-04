@@ -11,6 +11,7 @@ button{font:inherit; cursor:pointer; border:none; border-radius:14px; color:#fff
   padding:14px 22px; transition:filter .15s}
 button:hover{filter:brightness(1.15)}
 button:disabled{opacity:.4; cursor:not-allowed}
+a{text-decoration:none}
 .card{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px}
 .muted{color:var(--muted)}
 .hk{color:var(--muted); font-size:.85em}
@@ -19,13 +20,13 @@ button:disabled{opacity:.4; cursor:not-allowed}
 .chip{display:inline-block; padding:4px 12px; border-radius:999px; background:#0ea5e9; font-size:14px}
 .center{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px}
 
-/* Kiosk */
+/* Kiosk 取號頁 */
 #takeBtn{width:min(520px,86vw); height:min(520px,60vh); border-radius:36px; font-size:44px; line-height:1.35;
   background:linear-gradient(160deg,#2563eb,#1d4ed8); box-shadow:0 12px 40px rgba(37,99,235,.4)}
 #newTicket{font-size:110px; font-weight:800; letter-spacing:6px; color:#facc15}
 #note{max-width:560px; text-align:center; line-height:1.6}
 
-/* Counter */
+/* Counter 櫃位頁 */
 .counter-wrap{max-width:760px; margin:0 auto; padding:20px; display:grid; gap:18px}
 .big-num{font-size:72px; font-weight:800; text-align:center; letter-spacing:4px; color:#facc15}
 .btn-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px}
@@ -37,7 +38,7 @@ button:disabled{opacity:.4; cursor:not-allowed}
 .waiting-list{display:flex; flex-wrap:wrap; gap:8px}
 .waiting-list span{background:#334155; border-radius:8px; padding:6px 10px; font-size:14px}
 
-/* Display */
+/* Display 大屏幕 */
 .display-wrap{height:100vh; display:grid; grid-template-rows:1fr auto; padding:24px; gap:24px}
 .display-main{display:grid; grid-template-columns:1.2fr 1fr; gap:24px; min-height:0}
 .call-panel{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px}
@@ -55,7 +56,7 @@ button:disabled{opacity:.4; cursor:not-allowed}
 .ticker{color:#38bdf8}
 #startTts{position:fixed; inset:auto 20px 20px auto; background:var(--ok); font-size:18px}
 
-/* Admin */
+/* Admin 管理頁 */
 .admin-wrap{max-width:900px; margin:0 auto; padding:20px; display:grid; gap:18px}
 .admin-wrap h3{margin-bottom:10px}
 label{display:block; margin:8px 0 4px; font-size:14px}
@@ -67,7 +68,7 @@ input,select{width:100%; padding:10px; border-radius:10px; border:1px solid var(
   padding:10px 18px; border-radius:10px; opacity:0; transition:opacity .3s; pointer-events:none}
 .toast.show{opacity:1}
 
-/* 打印小票：80mm 紙／72mm 寬／模擬內置字體 12×24 比例（1x≈12px, 2x≈24px） */
+/* 打印小票：80mm 紙／72mm 打印寬度／模擬內置字體 12×24 比例（1x≈12px, 2x≈24px） */
 #printArea{display:none}
 @media print{
   @page{ size:80mm auto; margin:0; }
@@ -75,10 +76,11 @@ input,select{width:100%; padding:10px; border-radius:10px; border:1px solid var(
   #printArea{
     display:block!important; width:72mm; margin:0 auto;
     color:#000; background:#fff;
-    font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;
+    font-family:'Noto Serif TC','PMingLiU','SimSun',serif;
+    /* 如想改用黑體，改做：'Noto Sans TC','Microsoft JhengHei',sans-serif */
     font-size:12px; line-height:1.5; padding:2mm 0;
   }
-  /* 頁頭：logo＋校名 */
+  /* 頁頭：左 logo＋校名 */
   #printArea .t-head{display:flex; align-items:center; gap:2mm; border-bottom:0.4mm solid #000; padding-bottom:2mm; margin-bottom:2mm;}
   #printArea .t-head img{width:14mm; height:14mm; object-fit:contain; flex:0 0 auto;}
   #printArea .t-school-zh{font-size:20px; font-weight:bold; line-height:1.2;}
@@ -89,6 +91,6 @@ input,select{width:100%; padding:10px; border-radius:10px; border:1px solid var(
   #printArea .t-title-en{font-size:12px; font-weight:bold; letter-spacing:2px;}
   #printArea .t-num{font-size:52px; font-weight:bold; line-height:1.1; margin:3mm 0; letter-spacing:2px;}
   #printArea .t-row{font-size:12px; margin:1mm 0;}
-  /* 底部提示（左對齊，似參考票） */
+  /* 底部提示（左對齊） */
   #printArea .t-note{font-size:12px; margin-top:4mm; line-height:1.7; text-align:left;}
 }
