@@ -4,12 +4,7 @@
 </head><body>
 <div class="display-wrap">
   <div class="display-main">
-    <div class="card call-panel" id="callPanel">
-      <div class="call-label muted">Now Calling 請到</div>
-      <div class="call-num" id="callNum">—</div>
-      <div class="arrow">↓</div>
-      <div class="counter-box" id="callCounter">—</div>
-    </div>
+    <div class="card call-grid" id="callGrid"></div>
     <div class="card queue-panel">
       <h2>Waiting 等候中</h2>
       <div class="queue-items" id="queueItems"></div>
@@ -28,25 +23,54 @@
 let lastSeq = 0;
 onState(s => {
   document.getElementById('footerTitle').innerHTML = `${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
+
+  /* 等候區 */
   const w = waiting();
   document.getElementById('queueItems').innerHTML = w.map(t=>`<span>${t.label}</span>`).join('') || '<span class="muted">No one waiting 暫無等候</span>';
+
+  /* 已叫號區：每櫃位一格，未完成持續顯示，新叫號唔會覆蓋其他櫃位 */
+  const byCounter = {};
+  ticketsArr().forEach(t => {
+    if (t.status !== 'called') return;
+    const cur = byCounter[t.counter];
+    if (!cur || (t.calledAt||0) >= (cur.calledAt||0)) byCounter[t.counter] = t;   // 每櫃位顯示最新叫號
+  });
+  const ids = (s.settings.counters||[]).map(c => c.id);
+  Object.keys(byCounter).forEach(id => { if (!ids.includes(Number(id))) ids.push(Number(id)); });
+
   const lc = s.lastCall;
-  if (!lc){ document.getElementById('callNum').textContent='—'; document.getElementById('callCounter').innerHTML='Please wait 請稍候'; return; }
-  const c = counterById(lc.counter);
-  document.getElementById('callNum').textContent = lc.ticket.label;
-  document.getElementById('callCounter').innerHTML = `${c.name}<br><span class="hk">${c.nameZh}</span>`;
-  document.getElementById('ticker').textContent = `Now Calling 請到 ${lc.ticket.label} → ${c.name}`;
-  if (lc.seq !== lastSeq){
+  const fresh = lc && (Date.now() - lc.at < 8000);   // 8 秒內視為「剛叫」→ 閃爍
+  document.getElementById('callGrid').innerHTML = ids.map(id => {
+    const t = byCounter[id]; const c = counterById(id);
+    const active = fresh && Number(lc.counter) === Number(id);
+    return `<div class="call-item${active ? ' active' : ''}">
+      <div class="ci-name">${c.name} <span class="hk">${c.nameZh}</span></div>
+      <div class="ci-num">${t ? t.label : '—'}</div>
+    </div>`;
+  }).join('') || '<div class="call-item"><div class="ci-name muted">No counters 暫無櫃位</div><div class="ci-num">—</div></div>';
+
+  /* 底部跑馬燈 */
+  if (lc){
+    const c = counterById(lc.counter);
+    document.getElementById('ticker').textContent = `Now Calling 請到 ${lc.ticket.label} → ${c.name}`;
+  } else {
+    document.getElementById('ticker').textContent = '';
+  }
+
+  /* 新叫號 → 閃爍＋三語音檔廣播 */
+  if (lc && lc.seq !== lastSeq){
     lastSeq = lc.seq;
-    const panel = document.getElementById('callPanel');
-    panel.classList.remove('active'); void panel.offsetWidth; panel.classList.add('active');
+    const c = counterById(lc.counter);
     announce(s.settings.tts.languages, { ...s.settings.tts, phrases: {
-      en: buildPhrase('en', lc.ticket.label, c),
+      en:  buildPhrase('en',  lc.ticket.label, c),
       yue: buildPhrase('yue', lc.ticket.label, c),
-      zh: buildPhrase('zh', lc.ticket.label, c)
+      zh:  buildPhrase('zh',  lc.ticket.label, c)
     }}, true);
   }
 });
-document.getElementById('startTts').onclick = () => { chime(); speechSynthesis.cancel(); document.getElementById('startTts').style.display='none'; };
+document.getElementById('startTts').onclick = () => {
+  chime();   // 解鎖瀏覽器音訊
+  document.getElementById('startTts').style.display = 'none';
+};
 </script>
 </body></html>
