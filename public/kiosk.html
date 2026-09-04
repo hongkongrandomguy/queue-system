@@ -3,7 +3,19 @@
 <title>Take Ticket 取號</title><link rel="stylesheet" href="css/style.css">
 </head><body>
 <div class="topbar"><span id="sysTitle"></span><span class="chip" id="sessChip"></span></div>
-<div class="center" style="min-height:78vh">
+<div class="center" style="min-height:78vh;gap:24px">
+  <div class="row" style="justify-content:center">
+    <div class="card center" style="min-width:240px">
+      <div class="muted">Waiting Now 現時輪候</div>
+      <div id="waitCount" style="font-size:56px;font-weight:800;color:#38bdf8">0</div>
+      <div class="muted">tickets 籌</div>
+    </div>
+    <div class="card center" style="min-width:240px">
+      <div class="muted">Est. Waiting Time 預計等候時間</div>
+      <div id="waitTime" style="font-size:56px;font-weight:800;color:#facc15">—</div>
+      <div class="muted">minutes 分鐘</div>
+    </div>
+  </div>
   <button id="takeBtn">TAKE<br>A TICKET<span class="hk" style="display:block;font-size:28px;color:#dbeafe">請按此取號</span></button>
   <div id="result" class="card center" style="display:none">
     <div class="muted">Your Ticket Number 你的籌號</div>
@@ -20,6 +32,13 @@ let busy=false;
 onState(s=>{
   document.getElementById('sessChip').textContent=`Session 時段 ${s.session.prefix}`;
   document.getElementById('sysTitle').innerHTML=`${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
+  // 輪候數量 + 預計等候時間
+  const w = waiting().length;
+  document.getElementById('waitCount').textContent = w;
+  const avg = s.settings.avgMinutes || 3;                 // 平均每籌處理分鐘
+  const n = (s.settings.counters||[]).length || 1;        // 開放中櫃位數
+  const mins = Math.ceil(w * avg / n);
+  document.getElementById('waitTime').textContent = w ? '~'+mins : '0';
 });
 document.getElementById('takeBtn').onclick=async()=>{
   if(busy)return; busy=true;
