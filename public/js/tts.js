@@ -1,5 +1,4 @@
-/* Web Speech API 三語廣播：English / 粵語 / 普通話
-   使用設備內置語音，無需費用；如需更高質素，可於 admin 頁改用外置 TTS API */
+/* Web Speech API 三語廣播：English / 粵語 / 普通話 */
 let voices = [];
 function loadVoices(){ voices = speechSynthesis.getVoices(); }
 if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
@@ -7,35 +6,45 @@ if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged
 const DIGIT_EN = ['zero','one','two','three','four','five','six','seven','eight','nine'];
 const DIGIT_ZH = ['零','一','二','三','四','五','六','七','八','九'];
 
+/* 英文字母讀法（要調整就改呢度，例如想還原 A 做 'ay'） */
+const LETTER_EN = {
+  A:'ay', B:'bee', C:'see', D:'dee', E:'ee', F:'ef', G:'jee', H:'aitch',
+  I:'eye', J:'jay', K:'kay', L:'el', M:'em', N:'en', O:'oh', P:'pee',
+  Q:'cue', R:'ar', S:'ess', T:'tee', U:'you', V:'vee', W:'double you',
+  X:'ex', Y:'why', Z:'zed'
+};
+
 function pickVoice(want){
   if (!voices.length) return null;
   const score = v => {
     const l = v.lang.toLowerCase().replace('_','-');
     switch (want) {
       case 'yue': return l.startsWith('yue') ? 3 : (l==='zh-hk' ? 2 : 0);
-      case 'zh':  return (l==='zh-cn'||l==='zh_cn') ? 3 : l.startsWith('zh') ? 1 : 0;
+      case 'zh':  return l.startsWith('zh-cn') ? 3 : l.startsWith('zh') ? 1 : 0;
       case 'en':  return l.startsWith('en-hk') ? 3 : l.startsWith('en-gb') ? 2 : l.startsWith('en') ? 1 : 0;
     }
     return 0;
   };
-  return voices.map(v => [score(v), v]).filter(x => x[0] > 0)
-    .sort((a,b) => b[0]-a[0] || (b[1].localService?0:1)-(a[1].localService?0:1))[0][1];
+  const m = voices.map(v => [score(v), v]).filter(x => x[0] > 0)
+    .sort((a,b) => b[0]-a[0] || (b[1].localService?0:1)-(a[1].localService?0:1));
+  return m.length ? m[0][1] : null;
 }
 
-function spellDigits(str, mode){
-  return str.split('').map(ch => /\d/.test(ch) ? (mode==='en' ? DIGIT_EN[+ch] : DIGIT_ZH[+ch]) : ch).join(mode==='en' ? ' ' : '');
-}
 function buildPhrase(lang, numLabel, counter){
   const letters = numLabel.replace(/[0-9]/g,'');
   const digits  = numLabel.replace(/[A-Z]/g,'');
-  const spokenNum = spellDigits(digits, lang==='en' ? 'en' : 'zh');
-  const spokenCode = lang==='en'
-    ? letters.split('').join(' ') + ' ' + spokenNum
-    : letters + spokenNum;
-  const c = counter;
-  if (lang==='en')  return `${spokenCode}, please proceed to ${c.name}.`;
-  if (lang==='yue') return `請${spokenCode}，到${c.nameZh}。`;
-  return `請${spokenCode}，前往${c.nameZh}。`;
+  if (lang === 'en'){
+    const spokenLetters = letters.split('').map(ch => LETTER_EN[ch] || ch).join(' ');
+    const spokenDigits  = digits.split('').map(ch => DIGIT_EN[+ch]).join(' ');
+    return `${spokenLetters} ${spokenDigits}, please proceed to ${counter.name}.`;
+  }
+  const spokenDigits = digits.split('').map(ch => DIGIT_ZH[+ch]).join('');
+  if (lang === 'yue'){
+    return `請${letters}${spokenDigits}，到${counter.nameZh}。`;   // 粵語照舊「櫃位」
+  }
+  // 普通話：「櫃位」→「櫃檯」
+  const zhName = (counter.nameZh || '').replace(/櫃位/g, '櫃檯');
+  return `請${letters}${spokenDigits}，前往${zhName}。`;
 }
 
 function speak(text, langKey, opts){
@@ -52,7 +61,6 @@ function speak(text, langKey, opts){
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-/* 「叮當」提示音（WebAudio 合成，無需音檔） */
 let actx;
 function chime(){
   try{
@@ -69,7 +77,6 @@ function chime(){
   }catch(e){}
 }
 
-/* 廣播一組語言；cancel=true 會打斷正在播放的內容 */
 async function announce(languages, opts, cancel){
   if (!('speechSynthesis' in window)) return;
   if (cancel) speechSynthesis.cancel();
