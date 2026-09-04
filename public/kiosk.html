@@ -1,46 +1,41 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Take Ticket 取號</title>
-<link rel="stylesheet" href="/css/style.css">
+<title>Take Ticket 取號</title><link rel="stylesheet" href="css/style.css">
 </head><body>
-  <div class="topbar"><span id="sysTitle">Queue Up <span class="hk">請排队取號</span></span><span class="chip" id="sessChip">Session 時段 A</span></div>
-  <div class="center" style="min-height:78vh">
-    <button id="takeBtn">TAKE<br>A TICKET<span class="hk" style="display:block;font-size:28px;color:#dbeafe">請按此取號</span></button>
-    <div id="result" class="card center" style="display:none">
-      <div class="muted">Your Ticket Number 你的籌號</div>
-      <div id="newTicket">A001</div>
-      <div id="note" class="muted"></div>
-    </div>
+<div class="topbar"><span id="sysTitle"></span><span class="chip" id="sessChip"></span></div>
+<div class="center" style="min-height:78vh">
+  <button id="takeBtn">TAKE<br>A TICKET<span class="hk" style="display:block;font-size:28px;color:#dbeafe">請按此取號</span></button>
+  <div id="result" class="card center" style="display:none">
+    <div class="muted">Your Ticket Number 你的籌號</div>
+    <div id="newTicket">A001</div>
+    <div id="note" class="muted"></div>
   </div>
-  <div id="printArea"></div>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/common.js"></script>
-  <script>
-    let busy = false;
-    onState(s => {
-      document.getElementById('sessChip').textContent = `Session 時段 ${s.session.prefix}`;
-      document.getElementById('sysTitle').innerHTML = `${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
-    });
-    document.getElementById('takeBtn').onclick = async () => {
-      if (busy) return; busy = true;
-      const t = await api('/api/ticket');
-      busy = false;
-      document.getElementById('newTicket').textContent = t.label;
-      document.getElementById('note').innerHTML = STATE.settings.note;
-      document.getElementById('result').style.display = 'flex';
-      // 打印小票
-      const c1 = STATE.settings.counters.map(c => c.name).join(' / ');
-      document.getElementById('printArea').innerHTML = `
-        <div class="t-center">
-          <div class="t-title">${STATE.settings.title}</div>
-          <div class="t-num">${t.label}</div>
-          <div class="t-row">Time 時間: ${t.time}</div>
-          <div class="t-row">Session 時段: ${STATE.session.prefix}</div>
-          <div class="t-note">Please keep this ticket and wait for the display announcement.<br>請保留此籌號，並留意大屏幕廣播。</div>
-          <div class="t-note">${c1}</div>
-        </div>`;
-      window.print();
-      setTimeout(() => document.getElementById('result').style.display = 'none', 6000);
-    };
-  </script>
+</div>
+<div id="printArea"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="js/config.js"></script><script src="js/common.js"></script>
+<script>
+let busy=false;
+onState(s=>{
+  document.getElementById('sessChip').textContent=`Session 時段 ${s.session.prefix}`;
+  document.getElementById('sysTitle').innerHTML=`${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
+});
+document.getElementById('takeBtn').onclick=async()=>{
+  if(busy)return; busy=true;
+  const t=await takeTicket(); busy=false;
+  document.getElementById('newTicket').textContent=t.label;
+  document.getElementById('note').textContent=STATE.settings.note;
+  document.getElementById('result').style.display='flex';
+  document.getElementById('printArea').innerHTML=`
+    <div class="t-center">
+      <div class="t-title">${STATE.settings.title}</div>
+      <div class="t-num">${t.label}</div>
+      <div class="t-row">Time 時間: ${t.time}</div>
+      <div class="t-note">Please keep this ticket and wait for the display announcement.<br>請保留此籌號，並留意大屏幕廣播。</div>
+    </div>`;
+  window.print();
+  setTimeout(()=>document.getElementById('result').style.display='none',6000);
+};
+</script>
 </body></html>
