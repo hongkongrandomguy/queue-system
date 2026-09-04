@@ -53,7 +53,8 @@ document.getElementById('takeBtn').onclick=async()=>{
       <div class="t-row">Time 時間: ${t.time}</div>
       <div class="t-note">Please keep this ticket and wait for the display announcement.<br>請保留此籌號，並留意大屏幕廣播。</div>
     </div>`;
-  window.print();
+  // 延遲 200 毫秒，確保 Logo 和大字體渲染完畢再發送打印指令
+  setTimeout(() => { window.print(); }, 200);
   setTimeout(()=>document.getElementById('result').style.display='none',6000);
 };
 </script>
