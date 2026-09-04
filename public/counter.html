@@ -6,15 +6,19 @@
 <div class="topbar"><span id="counterName">Counter 櫃位</span><span class="chip" id="sessChip"></span></div>
 <div class="counter-wrap">
   <div class="card center">
-    <div class="muted">Now Serving 目前處理</div>
+    <div class="muted">Now Serving 目前處理（最新叫號）</div>
     <div class="big-num" id="current">—</div>
     <div class="muted" id="waitingCount">Waiting 等候中: 0</div>
   </div>
   <div class="btn-grid">
     <button id="btnNext">CALL NEXT<br><span class="hk">呼叫下一位</span></button>
     <button id="btnRecall" class="btn-amber">RECALL<br><span class="hk">重新呼叫</span></button>
-    <button id="btnDone" class="btn-green">COMPLETE<br><span class="hk">完成</span></button>
+    <button id="btnDone" class="btn-green">COMPLETE<br><span class="hk">完成目前</span></button>
     <button id="btnPad" class="btn-gray">CALL NUMBER<br><span class="hk">指定號碼</span></button>
+  </div>
+  <div class="card">
+    <div class="muted" style="margin-bottom:8px">Called · Not Completed 已叫號未完成（點擊該號碼＝完成佢）</div>
+    <div class="waiting-list" id="calledList"></div>
   </div>
   <div class="card" id="padBox" style="display:none">
     <div class="row" style="margin-bottom:10px">
@@ -44,15 +48,32 @@ onState(s => {
   document.getElementById('sessChip').textContent = `Session 時段 ${s.session.prefix}`;
   const c = counterById(cid);
   document.getElementById('counterName').innerHTML = `${c.name} <span class="hk">${c.nameZh}</span>`;
-  const mine = currentOf(cid);
-  document.getElementById('current').textContent = mine ? mine.label : '—';
+
+  /* 已叫號未完成（最新行先），唔會互相覆蓋 */
+  const called = ticketsArr()
+    .filter(t => t.status==='called' && String(t.counter)===String(cid))
+    .sort((a,b) => (b.calledAt||0) - (a.calledAt||0));
+  const current = called[0] || null;
+  document.getElementById('current').textContent = current ? current.label : '—';
+  document.getElementById('calledList').innerHTML = called.map(t =>
+    `<span class="called-chip${current && t.key===current.key?' cur':''}" onclick="finish('${t.key}')">${t.label}</span>`
+  ).join('') || '<span class="muted">Empty 暫無</span>';
+
   const w = waiting();
   document.getElementById('waitingCount').textContent = `Waiting 等候中: ${w.length}`;
   document.getElementById('waitingList').innerHTML = w.map(t=>`<span>${t.label}</span>`).join('') || '<span class="muted">Empty 暫無</span>';
 });
+async function finish(key){
+  const t = ticketsArr().find(x => x.key === key);
+  if (t && confirm(`Complete ${t.label}?\n完成 ${t.label}？`)) await completeTicket(key);
+}
 document.getElementById('btnNext').onclick = async () => { if (!(await callNext(cid))) toast('No waiting tickets 已無等候籌號'); };
 document.getElementById('btnRecall').onclick = () => recall(cid);
-document.getElementById('btnDone').onclick = () => complete(cid);
+document.getElementById('btnDone').onclick = async () => {
+  const cur = currentOf(cid);
+  if (!cur) return toast('No active ticket 目前無處理中籌號');
+  await completeTicket(cur.key);
+};
 document.getElementById('btnPad').onclick = () => { padBox.style.display='block'; padInput.value=''; };
 document.getElementById('padClose').onclick = () => padBox.style.display='none';
 const inp = document.getElementById('padInput');
