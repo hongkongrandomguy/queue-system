@@ -1,20 +1,14 @@
-/* 自訂音檔廣播版
-   音檔放喺 public/audio/
-   播放順序（; 分隔）：
-   EN : Ticket;A;0;0;0;please go to counter;1
-   YUE: 籌號;A;0;0;0;請到;1;號櫃位
-   ZH : 籌號;A;0;0;0;請到;1;號櫃檯
-*/
-const AUDIO_EXT = '.mp3';   // 如用 .wav／.m4a，改呢度
+/* 自訂音檔廣播版（音檔喺根目錄 /audio/） */
+const AUDIO_EXT = '.mp3';
 let currentAudio = null;
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 function playClip(path){
   return new Promise(res => {
-    const a = new Audio('audio/' + path + AUDIO_EXT);
+    const a = new Audio('../audio/' + path + AUDIO_EXT);
     currentAudio = a;
     a.onended = () => { currentAudio = null; res(); };
-    a.onerror = () => { currentAudio = null; res(); };   // 缺檔自動跳過
+    a.onerror = () => { currentAudio = null; res(); };
     a.play().catch(() => res());
   });
 }
@@ -25,9 +19,11 @@ function chime(){ return playClip('chime'); }
 function buildPhrase(lang, numLabel, counter){
   const letters = numLabel.replace(/[0-9]/g,'').split('');
   const digits  = numLabel.replace(/[A-Z]/g,'').split('');
+  /* 櫃位編號：只從名稱 Counter N 抽取數字，絕不使用內部 id */
   let rawId = '1';
-  if (counter){
-    rawId = (counter.name || '').replace(/\D/g,'') || '1';
+  if (counter && counter.name){
+    const n = String(counter.name).replace(/\D/g,'');
+    if (n) rawId = n;
   }
   const cid = rawId.split('');
   if (lang === 'en'){
@@ -49,7 +45,7 @@ async function announce(languages, opts, cancel){
     const seq = opts.phrases && opts.phrases[lang];
     if (!seq) continue;
     for (let i=0; i<reps; i++){
-      await chime();                      // （提示音）
+      await chime();
       await wait(300);
       for (const p of seq){ await playClip(p); await wait(150); }
       await wait(400);
