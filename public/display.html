@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Display 大屏幕</title>
+<link rel="stylesheet" href="/css/style.css">
+</head><body>
+  <div class="display-wrap">
+    <div class="display-main">
+      <div class="card call-panel" id="callPanel">
+        <div class="call-label muted">Now Calling 請到</div>
+        <div class="call-num" id="callNum">—</div>
+        <div class="arrow">↓</div>
+        <div class="counter-box" id="callCounter">—</div>
+      </div>
+      <div class="card queue-panel">
+        <h2>Waiting 等候中</h2>
+        <div class="queue-items" id="queueItems"></div>
+      </div>
+    </div>
+    <div class="display-footer">
+      <span id="footerTitle"></span>
+      <span class="ticker" id="ticker"></span>
+    </div>
+  </div>
+  <button id="startTts">START SOUND 開啟廣播聲音</button>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/tts.js"></script>
+  <script>
+    let lastSeq = 0;
+    onState(s => {
+      document.getElementById('footerTitle').innerHTML = `${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
+      const w = s.tickets.filter(t => t.status==='waiting').sort((a,b)=>a.no-b.no);
+      document.getElementById('queueItems').innerHTML = w.map(t=>`<span>${t.label}</span>`).join('') || '<span class="muted">No one waiting 暫無等候</span>';
+      const lc = s.lastCall;
+      if (!lc){
+        document.getElementById('callNum').textContent = '—';
+        document.getElementById('callCounter').innerHTML = 'Please wait 請稍候';
+        return;
+      }
+      const c = counterById(lc.counter);
+      document.getElementById('callNum').textContent = lc.ticket.label;
+      document.getElementById('callCounter').innerHTML = `${c.name}<br><span class="hk">${c.nameZh}</span>`;
+      document.getElementById('ticker').textContent = `Now Calling 請到 ${lc.ticket.label} → ${c.name}`;
+      if (lc.seq !== lastSeq){
+        lastSeq = lc.seq;
+        const panel = document.getElementById('callPanel');
+        panel.classList.remove('active'); void panel.offsetWidth; panel.classList.add('active');
+        const phrases = {
+          en:  buildPhrase('en',  lc.ticket.label, c),
+          yue: buildPhrase('yue', lc.ticket.label, c),
+          zh:  buildPhrase('zh',  lc.ticket.label, c)
+        };
+        announce(s.settings.tts.languages, { ...s.settings.tts, phrases }, true);
+      }
+    });
+    document.getElementById('startTts').onclick = () => {
+      chime();                                   // 解鎖音訊
+      speechSynthesis.cancel();
+      document.getElementById('startTts').style.display = 'none';
+      toast && 0;
+    };
+    setInterval(() => { const d=new Date(); document.title = d.toLocaleTimeString('en-GB'); }, 1000);
+  </script>
+</body></html>
