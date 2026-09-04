@@ -73,31 +73,31 @@ input,select{width:100%; padding:10px; border-radius:10px; border:1px solid #d1d
   padding:10px 18px; border-radius:10px; opacity:0; transition:opacity .3s; pointer-events:none; font-weight:600}
 .toast.show{opacity:1}
 
-/* 打印小票：微軟正黑體、現代無襯綫、簡約專業 */
+/* 打印小票：微軟正黑體、減少粗體、加大重點文字 */
 #printArea{display:none}
 @media print{
   @page{ size:80mm auto; margin:0; }
   body>*{display:none!important}
   #printArea{
     display:block!important; width:72mm; margin:0 auto;
-    color:#111; background:#fff;
-    /* 強制使用微軟正黑體 */
-    font-family: 'Microsoft JhengHei', '微軟正黑體', sans-serif;
-    font-size:12px; line-height:1.5; padding:3mm 0;
+    color:#000; background:#fff;
+    font-family:'Microsoft JhengHei','微軟正黑體',sans-serif;
+    font-size:13px; line-height:1.6; padding:3mm 0;
+    font-weight:400;   /* 整體正常字重，熱敏打印更清晰 */
   }
   /* 頁頭 */
   #printArea .t-head{display:flex; align-items:center; gap:2.5mm; padding-bottom:2.5mm; margin-bottom:3mm;
-    border-bottom:0.3mm solid #111;}
-  #printArea .t-head img{width:13mm; height:13mm; object-fit:contain; flex:0 0 auto;}
-  #printArea .t-school-zh{font-size:18px; font-weight:700; line-height:1.25; letter-spacing:1px;}
-  #printArea .t-school-en{font-size:8.5px; font-weight:600; letter-spacing:0.8px; color:#333;}
+    border-bottom:0.3mm solid #000;}
+  #printArea .t-head img{width:14mm; height:14mm; object-fit:contain; flex:0 0 auto;}
+  #printArea .t-school-zh{font-size:22px; font-weight:400; line-height:1.25; letter-spacing:1px;}
+  #printArea .t-school-en{font-size:11px; font-weight:400; letter-spacing:0.6px;}
   /* 標題＋號碼 */
   #printArea .t-center{text-align:center}
-  #printArea .t-title{font-size:15px; font-weight:700; letter-spacing:6px; margin-top:1mm;}
-  #printArea .t-title-en{font-size:9px; font-weight:600; letter-spacing:3px; color:#333;}
-  #printArea .t-num{font-size:56px; font-weight:800; line-height:1.05; margin:3mm 0; letter-spacing:1px;}
-  #printArea .t-row{font-size:11px; color:#222; margin:1mm 0;}
+  #printArea .t-title{font-size:20px; font-weight:400; letter-spacing:5px; margin-top:1mm;}
+  #printArea .t-title-en{font-size:12px; font-weight:400; letter-spacing:3px;}
+  #printArea .t-num{font-size:60px; font-weight:700; line-height:1.05; margin:3mm 0; letter-spacing:2px;}
+  #printArea .t-row{font-size:12px; margin:1mm 0;}
   /* 底部提示 */
-  #printArea .t-note{font-size:10.5px; color:#222; margin-top:4mm; padding-top:2.5mm;
-    border-top:0.3mm dashed #999; line-height:1.7; text-align:left;}
+  #printArea .t-note{font-size:13px; margin-top:4mm; padding-top:2.5mm;
+    border-top:0.3mm dashed #666; line-height:1.8; text-align:left;}
 }
