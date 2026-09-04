@@ -114,3 +114,11 @@ button .hk{color:rgba(255,255,255,.85);}
 .call-item .ci-name .hk{color:#aecbfa;}
 .call-item .ci-num{font-size:clamp(48px,4.5vw,92px); font-weight:700; letter-spacing:2px; margin-top:12px; line-height:1.1; color:#f8fafc;}
 .call-item.active .ci-num{color:#fbbf24; animation:flash 1.2s ease-in-out 6;}
+/* 大屏幕防溢出＋自動滾動 */
+.display-wrap{overflow:hidden;}
+.display-main{min-height:0;}
+.display-wrap .card{min-height:0; overflow:hidden;}
+.call-grid{overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;}
+.call-grid::-webkit-scrollbar{display:none;}
+.queue-items{overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;}
+.queue-items::-webkit-scrollbar{display:none;}
