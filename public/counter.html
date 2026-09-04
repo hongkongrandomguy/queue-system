@@ -1,0 +1,78 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Counter 櫃位</title>
+<link rel="stylesheet" href="/css/style.css">
+</head><body>
+  <div class="topbar">
+    <span id="counterName">Counter 櫃位</span>
+    <span class="chip" id="sessChip">Session 時段 A</span>
+  </div>
+  <div class="counter-wrap">
+    <div class="card center">
+      <div class="muted">Now Serving 目前處理</div>
+      <div class="big-num" id="current">—</div>
+      <div class="muted" id="waitingCount">Waiting 等候中: 0</div>
+    </div>
+    <div class="btn-grid">
+      <button id="btnNext">CALL NEXT<br><span class="hk">呼叫下一位</span></button>
+      <button id="btnRecall" class="btn-amber">RECALL<br><span class="hk">重新呼叫</span></button>
+      <button id="btnDone" class="btn-green">COMPLETE<br><span class="hk">完成</span></button>
+      <button id="btnPad" class="btn-gray">CALL NUMBER<br><span class="hk">指定號碼</span></button>
+    </div>
+    <div class="card" id="padBox" style="display:none">
+      <div class="row" style="margin-bottom:10px">
+        <input id="padInput" placeholder="e.g. 12 or A012" style="max-width:220px" inputmode="numeric">
+        <button id="padGo">Call 呼叫</button>
+        <button class="btn-gray" id="padClose">Close 關閉</button>
+      </div>
+      <div class="keypad">
+        <button>1</button><button>2</button><button>3</button>
+        <button>4</button><button>5</button><button>6</button>
+        <button>7</button><button>8</button><button>9</button>
+        <button>⌫</button><button>0</button><button>OK</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="muted" style="margin-bottom:8px">Waiting Queue 等候隊伍</div>
+      <div class="waiting-list" id="waitingList"></div>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/common.js"></script>
+  <script>
+    const cid = location.pathname.split('/').pop() || '1';
+    onState(s => {
+      document.getElementById('sessChip').textContent = `Session 時段 ${s.session.prefix}`;
+      const c = counterById(cid);
+      document.getElementById('counterName').innerHTML = `${c.name} <span class="hk">${c.nameZh}</span>`;
+      const mine = s.tickets.find(t => t.status === 'called' && String(t.counter) === String(cid));
+      document.getElementById('current').textContent = mine ? mine.label : '—';
+      const w = s.tickets.filter(t => t.status === 'waiting').sort((a,b)=>a.no-b.no);
+      document.getElementById('waitingCount').textContent = `Waiting 等候中: ${w.length}`;
+      document.getElementById('waitingList').innerHTML = w.map(t=>`<span>${t.label}</span>`).join('') || '<span class="muted">Empty 暫無</span>';
+    });
+    document.getElementById('btnNext').onclick = async () => {
+      const r = await api(`/api/counter/${cid}/next`);
+      if (!r.ok) toast('No waiting tickets 已無等候籌號');
+    };
+    document.getElementById('btnRecall').onclick = () => api(`/api/counter/${cid}/recall`);
+    document.getElementById('btnDone').onclick = () => api(`/api/counter/${cid}/complete`);
+    document.getElementById('btnPad').onclick = () => { document.getElementById('padBox').style.display='block'; document.getElementById('padInput').value=''; };
+    document.getElementById('padClose').onclick = () => document.getElementById('padBox').style.display='none';
+    const inp = document.getElementById('padInput');
+    document.querySelectorAll('.keypad button').forEach(b => b.onclick = () => {
+      const k = b.textContent;
+      if (k==='⌫') inp.value = inp.value.slice(0,-1);
+      else if (k==='OK') callNumber();
+      else inp.value += k;
+    });
+    document.getElementById('padGo').onclick = callNumber;
+    async function callNumber(){
+      const r = await api(`/api/counter/${cid}/call`, { no: inp.value });
+      if (!r.ok) toast('Ticket not found 找不到該籌號');
+      else document.getElementById('padBox').style.display='none';
+    }
+  </script>
+</body></html>
