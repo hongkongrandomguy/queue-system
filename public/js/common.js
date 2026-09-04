@@ -20,7 +20,10 @@ stateRef.on('value', s => { STATE = s.val() || JSON.parse(JSON.stringify(DEFAULT
 stateRef.once('value').then(s => { if (!s.exists()) stateRef.set(DEFAULTS); });
 
 function onState(f){ listeners.push(f); if (STATE) f(STATE); }
-function nowLabel(){ return new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function nowLabel(){
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
 function ticketsArr(){ return Object.entries(STATE.tickets||{}).map(([key,t])=>({key,...t})); }
 function waiting(){ return ticketsArr().filter(t=>t.status==='waiting').sort((a,b)=>a.no-b.no); }
 function currentOf(id){ return ticketsArr().find(t=>t.status==='called'&&String(t.counter)===String(id)); }
