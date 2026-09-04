@@ -4,6 +4,7 @@
 </head><body>
 <div class="topbar"><span>Admin 管理</span><span class="chip" id="sessChip"></span></div>
 <div class="admin-wrap">
+
   <div class="card">
     <h3>Session 時段</h3>
     <div class="row">
@@ -12,10 +13,11 @@
       <button id="btnAdvance" class="btn-green">Next Session 進入下一時段</button>
     </div>
     <label style="margin-top:10px">Avg. minutes per ticket 平均每籌處理時間（分鐘）
-  <input type="number" id="avgMinutes" min="1" max="60" style="max-width:140px">
-</label>
-    <p class="muted" style="margin-top:8px">Numbers restart from 001 in each session. 每個時段由 001 重新開始。</p>
+      <input type="number" id="avgMinutes" min="1" max="60" style="max-width:140px">
+    </label>
+    <p class="muted" style="margin-top:8px">Numbers restart from 001 in each session; avg. minutes is used for the kiosk waiting-time estimate. 每個時段由 001 重新開始；平均分鐘用於取號頁等候估算。</p>
   </div>
+
   <div class="card">
     <h3>Counters 櫃位</h3>
     <div id="counterList"></div>
@@ -25,6 +27,7 @@
       <button id="btnAddCounter">Add Counter 新增櫃位</button>
     </div>
   </div>
+
   <div class="card">
     <h3>Announcement 廣播</h3>
     <div class="row">
@@ -37,12 +40,14 @@
       <button id="btnTest" class="btn-amber" style="color:#111">Test 試播</button>
     </div>
   </div>
+
   <div class="card">
     <h3>Texts 文字</h3>
     <label>Title (EN)<input id="setTitle"></label>
     <label>Subtitle (中文)<input id="setSubtitle"></label>
     <label>Kiosk Note 取號提示<input id="setNote"></label>
   </div>
+
   <button id="btnSave" class="btn-green" style="padding:18px;font-size:20px">SAVE 儲存</button>
 </div>
 <div id="toast" class="toast"></div>
@@ -50,19 +55,27 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="js/config.js"></script><script src="js/common.js"></script><script src="js/tts.js"></script>
 <script>
+const $ = id => document.getElementById(id);
+let loaded = false;
 onState(s => {
-  document.getElementById('sessChip').textContent = `Session 時段 ${s.session.prefix} · Next 下一籌 ${s.session.prefix}${String(s.session.next).padStart(3,'0')}`;
+  $('sessChip').textContent = `Session 時段 ${s.session.prefix} · Next 下一籌 ${s.session.prefix}${String(s.session.next).padStart(3,'0')}`;
   renderCounters();
-  const t = s.settings.tts;
-  langEn.checked = t.languages.includes('en');
-  langYue.checked = t.languages.includes('yue');
-  langZh.checked = t.languages.includes('zh');
-  ttsRate.value = t.rate; ttsVol.value = t.volume; ttsRepeat.value = t.repeat;
-  setTitle.value = s.settings.title; setSubtitle.value = s.settings.subtitle; setNote.value = s.settings.note;
-  prefixInput.placeholder = s.session.prefix;
+  if (!loaded){                       // 文字欄只載入一次，避免輸入時被覆蓋
+    loaded = true;
+    const t = s.settings.tts;
+    $('langEn').checked  = t.languages.includes('en');
+    $('langYue').checked = t.languages.includes('yue');
+    $('langZh').checked  = t.languages.includes('zh');
+    $('ttsRate').value = t.rate; $('ttsVol').value = t.volume; $('ttsRepeat').value = t.repeat;
+    $('setTitle').value = s.settings.title;
+    $('setSubtitle').value = s.settings.subtitle;
+    $('setNote').value = s.settings.note;
+    $('avgMinutes').value = s.settings.avgMinutes || 3;
+    $('prefixInput').placeholder = s.session.prefix;
+  }
 });
 function renderCounters(){
-  counterList.innerHTML = STATE.settings.counters.map(c => `
+  $('counterList').innerHTML = STATE.settings.counters.map(c => `
     <div class="row">
       <span style="min-width:110px">${c.name}</span><span class="hk" style="min-width:110px">${c.nameZh}</span>
       <a href="counter.html?id=${c.id}" target="_blank"><button class="btn-gray">Open 開啟</button></a>
@@ -72,26 +85,31 @@ function renderCounters(){
 async function removeCounter(id){
   await saveSettings({ ...STATE.settings, counters: STATE.settings.counters.filter(c => c.id !== id) });
 }
-btnAddCounter.onclick = async () => {
-  const name = newCounterName.value.trim() || 'Counter ' + (STATE.settings.counters.length+1);
-  const nameZh = newCounterZh.value.trim() || name;
-  await saveSettings({ ...STATE.settings, counters: [...STATE.settings.counters, { id: Date.now()%100000, name, nameZh }] });
-  newCounterName.value = newCounterZh.value = '';
+$('btnAddCounter').onclick = async () => {
+  const name = $('newCounterName').value.trim() || 'Counter ' + (STATE.settings.counters.length + 1);
+  const nameZh = $('newCounterZh').value.trim() || name;
+  await saveSettings({ ...STATE.settings, counters: [...STATE.settings.counters, { id: Date.now() % 100000, name, nameZh }] });
+  $('newCounterName').value = $('newCounterZh').value = '';
 };
-btnSetPrefix.onclick = () => { const p = prefixInput.value.trim().toUpperCase(); if (p) setPrefix(p); };
-btnAdvance.onclick = () => advance();
-function getLangs(){ return ['en','yue','zh'].filter(l => ({en:langEn,yue:langYue,zh:langZh})[l].checked); }
-btnTest.onclick = () => {
+$('btnSetPrefix').onclick = () => { const p = $('prefixInput').value.trim().toUpperCase(); if (p) setPrefix(p); };
+$('btnAdvance').onclick = () => advance();
+function getLangs(){ return ['en','yue','zh'].filter(l => ({en:$('langEn'), yue:$('langYue'), zh:$('langZh')})[l].checked); }
+$('btnTest').onclick = () => {
   const c = STATE.settings.counters[0] || { name:'Counter 1', nameZh:'一號櫃位' };
   announce(getLangs(), { ...STATE.settings.tts, phrases: {
-    en: buildPhrase('en','A001',c), yue: buildPhrase('yue','A001',c), zh: buildPhrase('zh','A001',c)
+    en:  buildPhrase('en',  'A001', c),
+    yue: buildPhrase('yue', 'A001', c),
+    zh:  buildPhrase('zh',  'A001', c)
   }}, true);
 };
-btnSave.onclick = async () => {
+$('btnSave').onclick = async () => {
   await saveSettings({
-    title: setTitle.value, subtitle: setSubtitle.value, note: setNote.value,
+    title: $('setTitle').value,
+    subtitle: $('setSubtitle').value,
+    note: $('setNote').value,
     counters: STATE.settings.counters,
-    tts: { languages: getLangs(), rate:+ttsRate.value, volume:+ttsVol.value, repeat:+ttsRepeat.value }
+    avgMinutes: +$('avgMinutes').value || 3,
+    tts: { languages: getLangs(), rate:+$('ttsRate').value, volume:+$('ttsVol').value, repeat:+$('ttsRepeat').value }
   });
   toast('Saved 已儲存');
 };
