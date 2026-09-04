@@ -1,0 +1,23 @@
+{
+  "port": 3000,
+  "shopName": "我的店舖",
+  "notice": "請留意大屏幕叫號，多謝合作！",
+  "counters": 6,
+  "paper": 58,
+  "adminPin": "1234",
+  "tts": {
+    "provider": "edge",
+    "rate": "+0%",
+    "pitch": "+0Hz",
+    "langsOrder": ["yue", "zh", "en"],
+    "voices": {
+      "yue": "zh-HK-HiuGaaiNeural",
+      "zh": "zh-CN-XiaoxiaoNeural",
+      "en": "en-US-AriaNeural"
+    }
+  },
+  "queues": [
+    { "id": "A", "name": "一般服務", "prefix": "A", "pad": 3, "priority": 0 },
+    { "id": "B", "name": "優先服務", "prefix": "B", "pad": 3, "priority": 1 }
+  ]
+}
