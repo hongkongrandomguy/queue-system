@@ -5,7 +5,7 @@ const stateRef = db.ref('queue');
 const DEFAULTS = {
   settings: {
     title: 'Queue Up', subtitle: '請排队取號',
-    note: 'Please keep your ticket and watch the display. 請保留籌號並留意大屏幕。',
+    note: 'Please keep your ticket and watch for the display announcement. 請保留籌號並留意大屏幕廣播。',
     counters: [
       { id: 1, name: 'Counter 1', nameZh: '一號櫃位' },
       { id: 2, name: 'Counter 2', nameZh: '二號櫃位' }
@@ -26,8 +26,12 @@ function nowLabel(){
 }
 function ticketsArr(){ return Object.entries(STATE.tickets||{}).map(([key,t])=>({key,...t})); }
 function waiting(){ return ticketsArr().filter(t=>t.status==='waiting').sort((a,b)=>a.no-b.no); }
-function currentOf(id){ return ticketsArr().find(t=>t.status==='called'&&String(t.counter)===String(id)); }
-function counterById(id){ return (STATE.settings.counters||[]).find(c=>String(c.id)===String(id))||{name:'Counter '+id,nameZh:'櫃位 '+id}; }
+function currentOf(id){
+  return ticketsArr()
+    .filter(t=>t.status==='called' && String(t.counter)===String(id))
+    .sort((a,b)=>(b.calledAt||0)-(a.calledAt||0))[0];
+}
+function counterById(id){ return (STATE.settings.counters||[]).find(c=>String(c.id)===String(id))||{id:id,name:'Counter '+id,nameZh:'櫃位 '+id}; }
 function toast(m,ms=2500){ const t=document.getElementById('toast'); if(!t)return; t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),ms); }
 
 async function takeTicket(){
@@ -43,25 +47,31 @@ async function callNext(id){
   await stateRef.update({
     ['tickets/'+w.key+'/status']: 'called',
     ['tickets/'+w.key+'/counter']: Number(id),
+    ['tickets/'+w.key+'/calledAt']: Date.now(),
     lastCall: { ticket:{label:w.label,no:w.no}, counter:Number(id), at:Date.now(), seq:(STATE.lastCall?.seq||0)+1 }
   });
   return w;
 }
 async function recall(id){
   const t = currentOf(id); if (!t) return;
-  await stateRef.child('lastCall').set({ ticket:{label:t.label,no:t.no}, counter:Number(id), at:Date.now(), seq:(STATE.lastCall?.seq||0)+1 });
+  await stateRef.update({
+    ['tickets/'+t.key+'/calledAt']: Date.now(),
+    lastCall: { ticket:{label:t.label,no:t.no}, counter:Number(id), at:Date.now(), seq:(STATE.lastCall?.seq||0)+1 }
+  });
 }
-async function complete(id){ const t = currentOf(id); if (t) await stateRef.child('tickets/'+t.key+'/status').set('done'); }
 async function callNumber(id, raw){
   const num = Number(String(raw).toUpperCase().replace(/^[A-Z]+/,''));
   const t = ticketsArr().find(t=>t.no===num && t.status!=='done'); if (!t) return null;
   await stateRef.update({
     ['tickets/'+t.key+'/status']: 'called',
     ['tickets/'+t.key+'/counter']: Number(id),
+    ['tickets/'+t.key+'/calledAt']: Date.now(),
     lastCall: { ticket:{label:t.label,no:t.no}, counter:Number(id), at:Date.now(), seq:(STATE.lastCall?.seq||0)+1 }
   });
   return t;
 }
+async function completeTicket(key){ await stateRef.child('tickets/'+key+'/status').set('done'); }
+async function complete(id){ const t = currentOf(id); if (t) await completeTicket(t.key); }
 async function setPrefix(p){
   const ups = {};
   ticketsArr().forEach(t => { if (t.status==='waiting') ups['tickets/'+t.key+'/status'] = 'expired'; });
