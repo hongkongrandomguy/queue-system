@@ -1,4 +1,5 @@
 /* 自訂音檔廣播版
+   音檔放喺 public/audio/
    播放順序（; 分隔）：
    EN : Ticket;A;0;0;0;please go to counter;1
    YUE: 籌號;A;0;0;0;請到;1;號櫃位
@@ -13,7 +14,7 @@ function playClip(path){
     const a = new Audio('audio/' + path + AUDIO_EXT);
     currentAudio = a;
     a.onended = () => { currentAudio = null; res(); };
-    a.onerror = () => { currentAudio = null; res(); };   // 缺檔自動跳過，唔阻廣播
+    a.onerror = () => { currentAudio = null; res(); };   // 缺檔自動跳過
     a.play().catch(() => res());
   });
 }
@@ -24,7 +25,12 @@ function chime(){ return playClip('chime'); }
 function buildPhrase(lang, numLabel, counter){
   const letters = numLabel.replace(/[0-9]/g,'').split('');
   const digits  = numLabel.replace(/[A-Z]/g,'').split('');
-  const cid = String(counter.id ?? (counter.name || '').replace(/\D/g,'') || '1').split('');
+  let rawId = '1';
+  if (counter){
+    if (counter.id != null) rawId = String(counter.id);
+    else rawId = (counter.name || '').replace(/\D/g,'') || '1';
+  }
+  const cid = rawId.split('');
   if (lang === 'en'){
     return ['en/Ticket', ...letters.map(l=>'en/'+l), ...digits.map(d=>'en/'+d),
             'en/counter', ...cid.map(d=>'en/'+d)];
@@ -39,7 +45,7 @@ function buildPhrase(lang, numLabel, counter){
 
 async function announce(languages, opts, cancel){
   if (cancel) stopAudio();
-  const reps = opts.repeat ?? 1;
+  const reps = (opts && opts.repeat) ? opts.repeat : 1;
   for (const lang of languages){
     const seq = opts.phrases && opts.phrases[lang];
     if (!seq) continue;
