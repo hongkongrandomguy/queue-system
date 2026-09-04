@@ -19,27 +19,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="js/config.js"></script><script src="js/common.js"></script><script src="js/tts.js"></script>
-/* 位置不夠 → 自動連續滾動；夠 → 靜止 */
-function autoScroll(el, step, interval, holdMs){
-  step = step || 2; interval = interval || 40; holdMs = holdMs || 2000;
-  if (!el) return;
-  let holding = false;
-  setInterval(() => {
-    if (el.scrollHeight <= el.clientHeight + 4){ if (el.scrollTop) el.scrollTop = 0; return; }
-    if (holding) return;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2){
-      holding = true;                       // 到底，停 2 秒
-      setTimeout(() => {
-        el.scrollTo({ top:0, behavior:'smooth' });   // 平滑返頂
-        setTimeout(() => { holding = false; }, 900);
-      }, holdMs);
-    } else {
-      el.scrollTop += step;                 // 緩慢向下滾
-    }
-  }, interval);
-}
-autoScroll(document.getElementById('callGrid'));
-autoScroll(document.getElementById('queueItems'));
 <script>
 let lastSeq = 0;
 onState(s => {
@@ -93,5 +72,27 @@ document.getElementById('startTts').onclick = () => {
   chime();   // 解鎖瀏覽器音訊
   document.getElementById('startTts').style.display = 'none';
 };
+
+/* 位置不夠 → 自動連續滾動；夠 → 靜止 */
+function autoScroll(el, step, interval, holdMs){
+  step = step || 2; interval = interval || 40; holdMs = holdMs || 2000;
+  if (!el) return;
+  let holding = false;
+  setInterval(() => {
+    if (el.scrollHeight <= el.clientHeight + 4){ if (el.scrollTop) el.scrollTop = 0; return; }
+    if (holding) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2){
+      holding = true;                       // 到底，停 2 秒
+      setTimeout(() => {
+        el.scrollTo({ top:0, behavior:'smooth' });   // 平滑返頂
+        setTimeout(() => { holding = false; }, 900);
+      }, holdMs);
+    } else {
+      el.scrollTop += step;                 // 緩慢向下滾
+    }
+  }, interval);
+}
+autoScroll(document.getElementById('callGrid'));
+autoScroll(document.getElementById('queueItems'));
 </script>
 </body></html>
