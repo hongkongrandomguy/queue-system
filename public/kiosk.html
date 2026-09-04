@@ -32,13 +32,11 @@ let busy=false;
 onState(s=>{
   document.getElementById('sessChip').textContent=`Session 時段 ${s.session.prefix}`;
   document.getElementById('sysTitle').innerHTML=`${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
-  // 輪候數量 + 預計等候時間
-  const w = waiting().length;
-  document.getElementById('waitCount').textContent = w;
-  const avg = s.settings.avgMinutes || 3;                 // 平均每籌處理分鐘
-  const n = (s.settings.counters||[]).length || 1;        // 開放中櫃位數
-  const mins = Math.ceil(w * avg / n);
-  document.getElementById('waitTime').textContent = w ? '~'+mins : '0';
+  const w=waiting().length;
+  document.getElementById('waitCount').textContent=w;
+  const avg=s.settings.avgMinutes||3;
+  const n=(s.settings.counters||[]).length||1;
+  document.getElementById('waitTime').textContent=w?'~'+Math.ceil(w*avg/n):'0';
 });
 document.getElementById('takeBtn').onclick=async()=>{
   if(busy)return; busy=true;
@@ -47,14 +45,27 @@ document.getElementById('takeBtn').onclick=async()=>{
   document.getElementById('note').textContent=STATE.settings.note;
   document.getElementById('result').style.display='flex';
   document.getElementById('printArea').innerHTML=`
+    <div class="t-head">
+      <img src="img/logo.png" onerror="this.style.display='none'">
+      <div>
+        <div class="t-school-zh">觀塘瑪利諾書院</div>
+        <div class="t-school-en">KWUN TONG MARYKNOLL COLLEGE</div>
+      </div>
+    </div>
     <div class="t-center">
-      <div class="t-title">${STATE.settings.title}</div>
+      <div class="t-title">號碼票</div>
+      <div class="t-title-en">QUEUE TICKET</div>
       <div class="t-num">${t.label}</div>
-      <div class="t-row">Time 時間: ${t.time}</div>
-      <div class="t-note">Please keep this ticket and wait for the display announcement.<br>請保留此籌號，並留意大屏幕廣播。</div>
+      <div class="t-row">(發行 Issue: ${t.time})</div>
+      <div class="t-row">時段 Session: ${STATE.session.prefix}</div>
+    </div>
+    <div class="t-note">
+      請保留此籌號，並留意大屏幕廣播。<br>
+      Please keep this ticket and wait for the display announcement.<br>
+      如叫號時不在現場，將順延至下一位。<br>
+      If you are not present when called, your number will be passed to the next.
     </div>`;
-  // 延遲 200 毫秒，確保 Logo 和大字體渲染完畢再發送打印指令
-  setTimeout(() => { window.print(); }, 200);
+  setTimeout(()=>{ window.print(); },200);
   setTimeout(()=>document.getElementById('result').style.display='none',6000);
 };
 </script>
