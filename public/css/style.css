@@ -12,6 +12,7 @@ button{font:inherit; cursor:pointer; border:none; border-radius:12px; color:#fff
 button:hover{filter:brightness(1.08)}
 button:active{transform:scale(.98)}
 button:disabled{opacity:.4; cursor:not-allowed}
+button .hk{color:rgba(255,255,255,.85)}
 a{text-decoration:none}
 .card{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px;
   box-shadow:0 1px 2px rgba(16,24,40,.05)}
@@ -39,23 +40,29 @@ a{text-decoration:none}
 .keypad button{font-size:24px; padding:18px; background:#f1f5f9; color:var(--text)}
 .waiting-list{display:flex; flex-wrap:wrap; gap:8px}
 .waiting-list span{background:#f1f5f9; border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:14px; font-weight:600}
+.waiting-list .called-chip{cursor:pointer; background:#fef3c7; border-color:#f59e0b; color:#92400e}
+.waiting-list .called-chip.cur{background:#f59e0b; border-color:#f59e0b; color:#fff}
 
-/* Display 大屏幕（深色高對比） */
+/* Display 大屏幕（深色高對比、防溢出、自動滾動） */
 .display-wrap{height:100vh; display:grid; grid-template-rows:1fr auto; padding:24px; gap:24px;
-  background:#0b1220; color:#f8fafc}
+  background:#0b1220; color:#f8fafc; overflow:hidden}
 .display-main{display:grid; grid-template-columns:1.2fr 1fr; gap:24px; min-height:0}
-.display-wrap .card{background:#101a30; border-color:#1e293b; box-shadow:none}
+.display-wrap .card{background:#101a30; border-color:#1e293b; box-shadow:none; min-height:0; overflow:hidden}
 .display-wrap .muted,.display-wrap .hk{color:#8fa3c8}
-.call-panel{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px}
-.call-label{font-size:28px; font-weight:600; letter-spacing:2px}
-.call-num{font-size:clamp(120px,22vw,260px); font-weight:800; letter-spacing:8px; line-height:1}
-.call-panel.active .call-num{color:#fbbf24; animation:flash 1.2s ease-in-out 6}
+.display-wrap .call-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px;
+  align-content:start; overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none}
+.display-wrap .call-grid::-webkit-scrollbar{display:none}
+.call-item{overflow:hidden; text-align:center; padding:26px 10px; border-radius:14px; background:#182642}
+.call-item .ci-name{font-size:clamp(26px,2vw,42px); font-weight:700; color:#aecbfa; letter-spacing:1px}
+.call-item .ci-name .hk{color:#aecbfa}
+.call-item .ci-num{font-size:clamp(48px,4.5vw,92px); font-weight:700; letter-spacing:2px; margin-top:12px; line-height:1.1; color:#f8fafc}
+.call-item.active .ci-num{color:#fbbf24; animation:flash 1.2s ease-in-out 6}
 @keyframes flash{0%,100%{opacity:1}50%{opacity:.25}}
-.arrow{font-size:48px; color:#8fa3c8}
-.counter-box{text-align:center; font-size:40px; font-weight:700}
 .queue-panel{overflow:hidden; display:flex; flex-direction:column}
 .queue-panel h2{margin-bottom:14px; font-size:26px; font-weight:700; letter-spacing:1px}
-.queue-items{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; overflow:auto}
+.display-wrap .queue-items{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px;
+  overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none}
+.display-wrap .queue-items::-webkit-scrollbar{display:none}
 .queue-items span{background:#182642; text-align:center; border-radius:12px; padding:14px 6px; font-size:26px; font-weight:700}
 .display-footer{display:flex; justify-content:space-between; align-items:center; font-size:20px; color:#cbd5e1}
 .ticker{color:#60a5fa; font-weight:600}
@@ -82,43 +89,18 @@ input,select{width:100%; padding:10px; border-radius:10px; border:1px solid #d1d
     display:block!important; width:72mm; margin:0 auto;
     color:#000; background:#fff;
     font-family:'Microsoft JhengHei','微軟正黑體',sans-serif;
-    font-size:13px; line-height:1.6; padding:3mm 0;
-    font-weight:400;   /* 整體正常字重，熱敏打印更清晰 */
+    font-size:13px; line-height:1.6; padding:3mm 0; font-weight:400;
   }
-  /* 頁頭 */
   #printArea .t-head{display:flex; align-items:center; gap:2.5mm; padding-bottom:2.5mm; margin-bottom:3mm;
-    border-bottom:0.3mm solid #000;}
-  #printArea .t-head img{width:14mm; height:14mm; object-fit:contain; flex:0 0 auto;}
-  #printArea .t-school-zh{font-size:22px; font-weight:400; line-height:1.25; letter-spacing:1px;}
-  #printArea .t-school-en{font-size:11px; font-weight:400; letter-spacing:0.6px;}
-  /* 標題＋號碼 */
+    border-bottom:0.3mm solid #000}
+  #printArea .t-head img{width:14mm; height:14mm; object-fit:contain; flex:0 0 auto}
+  #printArea .t-school-zh{font-size:22px; font-weight:400; line-height:1.25; letter-spacing:1px}
+  #printArea .t-school-en{font-size:11px; font-weight:400; letter-spacing:0.6px}
   #printArea .t-center{text-align:center}
-  #printArea .t-title{font-size:20px; font-weight:400; letter-spacing:5px; margin-top:1mm;}
-  #printArea .t-title-en{font-size:12px; font-weight:400; letter-spacing:3px;}
-  #printArea .t-num{font-size:60px; font-weight:700; line-height:1.05; margin:3mm 0; letter-spacing:2px;}
-  #printArea .t-row{font-size:12px; margin:1mm 0;}
-  /* 底部提示 */
+  #printArea .t-title{font-size:20px; font-weight:400; letter-spacing:5px; margin-top:1mm}
+  #printArea .t-title-en{font-size:12px; font-weight:400; letter-spacing:3px}
+  #printArea .t-num{font-size:60px; font-weight:700; line-height:1.05; margin:3mm 0; letter-spacing:2px}
+  #printArea .t-row{font-size:12px; margin:1mm 0}
   #printArea .t-note{font-size:13px; margin-top:4mm; padding-top:2.5mm;
-    border-top:0.3mm dashed #666; line-height:1.8; text-align:left;}
+    border-top:0.3mm dashed #666; line-height:1.8; text-align:left}
 }
-
-/* 已叫號未完成 chips */
-.waiting-list .called-chip{cursor:pointer; background:#fef3c7; border-color:#f59e0b; color:#92400e;}
-.waiting-list .called-chip.cur{background:#f59e0b; border-color:#f59e0b; color:#fff;}
-/* 彩色按鈕上嘅中文細字改用半透明白，確保清晰 */
-button .hk{color:rgba(255,255,255,.85);}
-/* 已叫號區：每櫃位一格（大屏幕用） */
-.call-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; align-content:start;}
-.call-item{overflow:hidden; text-align:center; padding:26px 10px; border-radius:14px; background:#182642;}
-.call-item .ci-name{font-size:clamp(26px,2vw,42px); font-weight:700; color:#aecbfa; letter-spacing:1px;}
-.call-item .ci-name .hk{color:#aecbfa;}
-.call-item .ci-num{font-size:clamp(48px,4.5vw,92px); font-weight:700; letter-spacing:2px; margin-top:12px; line-height:1.1; color:#f8fafc;}
-.call-item.active .ci-num{color:#fbbf24; animation:flash 1.2s ease-in-out 6;}
-/* 大屏幕防溢出＋自動滾動 */
-.display-wrap{overflow:hidden;}
-.display-main{min-height:0;}
-.display-wrap .card{min-height:0; overflow:hidden;}
-.call-grid{overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;}
-.call-grid::-webkit-scrollbar{display:none;}
-.queue-items{overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;}
-.queue-items::-webkit-scrollbar{display:none;}
