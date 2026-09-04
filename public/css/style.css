@@ -73,7 +73,7 @@ input,select{width:100%; padding:10px; border-radius:10px; border:1px solid #d1d
   padding:10px 18px; border-radius:10px; opacity:0; transition:opacity .3s; pointer-events:none; font-weight:600}
 .toast.show{opacity:1}
 
-/* 打印小票：現代無襯綫、簡約專業 */
+/* 打印小票：微軟正黑體、現代無襯綫、簡約專業 */
 #printArea{display:none}
 @media print{
   @page{ size:80mm auto; margin:0; }
@@ -81,7 +81,8 @@ input,select{width:100%; padding:10px; border-radius:10px; border:1px solid #d1d
   #printArea{
     display:block!important; width:72mm; margin:0 auto;
     color:#111; background:#fff;
-    font-family:'Inter','Noto Sans TC','Noto Sans HK','Microsoft JhengHei',sans-serif;
+    /* 強制使用微軟正黑體 */
+    font-family: 'Microsoft JhengHei', '微軟正黑體', sans-serif;
     font-size:12px; line-height:1.5; padding:3mm 0;
   }
   /* 頁頭 */
