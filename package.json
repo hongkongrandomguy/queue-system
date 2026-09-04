@@ -1,0 +1,13 @@
+{
+  "name": "queue-call-system",
+  "version": "1.0.0",
+  "description": "多設備排隊取號+叫號系統：取號打印 / iPad 櫃位控制 / 大屏顯示 / 粵普英三語播報",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "ws": "^8.17.0"
+  }
+}
