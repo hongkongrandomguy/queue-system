@@ -130,7 +130,7 @@ async function advance(){
 }
 async function saveSettings(s){ await stateRef.child('settings').set(s); }
 
-/* 清除所有籌號數據（重印來源一併清除），號碼由 001 重新開始；設定與櫃位保留 */
+/* 清除所有籌號數據 */
 async function clearTickets(){
   await stateRef.update({
     tickets: null,
@@ -141,6 +141,7 @@ async function clearTickets(){
     'session/next': 1
   });
 }
+
 /* 櫃位暫停/恢復服務 */
 async function pauseCounter(id){ await stateRef.child('counters/' + id + '/paused').set(true); }
 async function resumeCounter(id){ await stateRef.child('counters/' + id + '/paused').set(false); }
