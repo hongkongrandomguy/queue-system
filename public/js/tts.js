@@ -1,13 +1,10 @@
-/* 音檔優先 → 缺檔調用 VoiceRSS 外接 TTS → 最後瀏覽器 TTS 兜底 */
+/* 音檔優先 → Edge 神經網絡 TTS → 瀏覽器 TTS 兜底 */
 const AUDIO_EXT = '.mp3';
-let currentAudio = null, currentResolve = null, announceToken = 0;
+let currentAudio = null, currentResolve = null, announceToken = 0, edgeAbort = null;
 const wait = ms => new Promise(r => setTimeout(r, ms));
+const escapeXml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-/* ===== 外接 TTS 設定 ===== */
-const VOICERSS_KEY = '38df71ac2202487f818f87902d693a20';   // ← 貼上 VoiceRSS 免費 key（留空＝直接用瀏覽器 TTS）
-const VR_LANG = { 'en-US':'en-us', 'zh-HK':'zh-hk', 'zh-CN':'zh-cn' };
-
-/* ===== 文字映射（clip 路徑 → 朗讀文字＋語言） ===== */
+/* ===== 文字映射 ===== */
 const TTS_LANG = { en:'en-US', yue:'zh-HK', zh:'zh-CN' };
 const TTS_DIG = {
   en:['zero','one','two','three','four','five','six','seven','eight','nine'],
@@ -15,10 +12,11 @@ const TTS_DIG = {
   zh:['零','一','二','三','四','五','六','七','八','九']
 };
 const TTS_WORDS = {
-  en:{ Ticket:'Ticket', counter:'please go to counter' },
+  en:{ Ticket:'Ticket number', counter:'please go to counter' },
   yue:{ ticket:'籌號', goto:'請到', suffix:'號櫃位' },
-  zh:{ ticket:'筹号', goto:'请到', suffix:'号柜台' }
+  zh:{ ticket:'号码', goto:'请到', suffix:'号柜台' }
 };
+const EDGE_VOICES = { 'en-US':'en-US-AriaNeural', 'zh-HK':'zh-HK-HiuGaaiNeural', 'zh-CN':'zh-CN-XiaoxiaoNeural' };
 function ttsInfoFor(path){
   const i = path.indexOf('/');
   if (i < 0) return null;
@@ -29,24 +27,54 @@ function ttsInfoFor(path){
   return w ? { text: w, lang: TTS_LANG[lang] } : null;
 }
 
-/* ===== VoiceRSS：先嘗試 fetch 快取，失敗就直接串流播放 ===== */
-async function vrSource(path){
-  const info = ttsInfoFor(path);
-  if (!info || !VOICERSS_KEY) return null;
-  const ck = 'vr_' + path;
-  const cached = localStorage.getItem(ck);
-  if (cached) return cached;
-  const url = `https://api.voicerss.org/?key=${VOICERSS_KEY}&hl=${VR_LANG[info.lang]}&c=MP3&b=64&src=${encodeURIComponent(info.text)}`;
-  try{
-    const r = await fetch(url);
-    if (r.ok){
-      const blob = await r.blob();
-      const data = await new Promise(res => { const f = new FileReader(); f.onload = () => res(f.result); f.readAsDataURL(blob); });
-      try{ localStorage.setItem(ck, data); }catch(e){}
-      return data;
-    }
-  }catch(e){ /* CORS 或網絡問題 → 直接串流 */ }
-  return url;
+/* ===== Edge 神經網絡 TTS（WebSocket，免 key） ===== */
+function edgeTTS(path){
+  return new Promise(res => {
+    const info = ttsInfoFor(path);
+    if (!info) return res(null);
+    const ck = 'edge_' + path;
+    const cached = localStorage.getItem(ck);
+    if (cached) return res(cached);
+
+    const uuid = (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : String(Date.now()) + Math.random().toString().slice(2));
+    let ws;
+    try{
+      ws = new WebSocket('wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4&ConnectionId=' + uuid);
+    }catch(e){ return res(null); }
+
+    const chunks = [];
+    let done = false;
+    const finish = ok => {
+      if (done) return; done = true;
+      edgeAbort = null;
+      try{ ws.close(); }catch(e){}
+      if (!ok || !chunks.length) return res(null);
+      const blob = new Blob(chunks, { type:'audio/mp3' });
+      const f = new FileReader();
+      f.onload = () => { try{ localStorage.setItem(ck, f.result); }catch(e){} res(f.result); };
+      f.onerror = () => res(null);
+      f.readAsDataURL(blob);
+    };
+    edgeAbort = () => finish(false);           // 俾 stopAudio 即時中止
+    const now = () => new Date().toString();
+
+    ws.onopen = () => {
+      ws.send(`X-Timestamp:${now()}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"true"},"outputFormats":["audio-24khz-48kbitrate-mono-mp3"]}}}}\r\n`);
+      ws.send(`X-RequestId:${uuid}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${now()}\r\nPath:ssml\r\n\r\n<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${info.lang}"><voice name="${EDGE_VOICES[info.lang]}"><prosody pitch="+0Hz" rate="+0%" volume="+0%">${escapeXml(info.text)}</prosody></voice></speak>`);
+    };
+    ws.onmessage = ev => {
+      if (typeof ev.data === 'string'){
+        if (ev.data.includes('turn.end')) finish(true);
+      } else {
+        const d = new Uint8Array(ev.data);
+        const hl = (d[0] << 8) | d[1];
+        chunks.push(d.slice(2 + hl));
+      }
+    };
+    ws.onerror = () => finish(false);
+    ws.onclose = () => finish(chunks.length > 0);
+    setTimeout(() => finish(chunks.length > 0), 8000);   // 超時保護
+  });
 }
 
 /* ===== 瀏覽器 TTS 兜底 ===== */
@@ -66,7 +94,7 @@ function speakFallback(path, res){
 }
 if ('speechSynthesis' in window){ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); }
 
-/* ===== 播放鏈：本地音檔 → VoiceRSS → 瀏覽器 TTS ===== */
+/* ===== 播放鏈：本地音檔 → Edge TTS → 瀏覽器 TTS ===== */
 function playClip(path){
   const my = announceToken;
   return new Promise(res => {
@@ -82,8 +110,8 @@ function playClip(path){
         a.play().catch(() => attempt());
       } else {
         (async () => {
-          const src = await vrSource(path);
-          if (announceToken !== my) return res();
+          const src = await edgeTTS(path);
+          if (announceToken !== my) return res();        // 已被取消 → 靜默
           if (src){
             const a = new Audio(src);
             currentAudio = a; currentResolve = res;
@@ -102,6 +130,7 @@ function playClip(path){
 function stopAudio(){
   announceToken++;
   if (currentAudio) currentAudio.pause();
+  if (edgeAbort) edgeAbort();                            // 中止 Edge 合成
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   const r = currentResolve; currentAudio=null; currentResolve=null;
   if (r) r();
