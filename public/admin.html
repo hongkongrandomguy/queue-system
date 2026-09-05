@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin 管理</title><link rel="stylesheet" href="css/style.css">
 </head><body>
-  <div id="lock" style="position:fixed; inset:0; background:linear-gradient(180deg,#f8fafc,#eef2f7); z-index:999; display:flex; align-items:center; justify-content:center; padding:20px">
+<div id="lock" style="position:fixed; inset:0; background:linear-gradient(180deg,#f8fafc,#eef2f7); z-index:999; display:flex; align-items:center; justify-content:center; padding:20px">
   <div class="card" style="max-width:380px; width:100%; text-align:center">
     <h3 style="border:none; padding:0">Admin Login 管理員登入</h3>
     <p class="muted" style="margin:6px 0 12px">Password required 需要密碼先可操作</p>
@@ -11,26 +11,24 @@
     <p id="pwErr" style="margin-top:8px; color:#dc2626; font-weight:600"></p>
   </div>
 </div>
-<div class="topbar"><span>Admin 管理</span><span class="chip" id="sessChip">Loading 載入中…</span></div>
+<div class="topbar"><span>Admin 管理</span><span class="chip" id="sessChip"></span></div>
 <div class="admin-wrap">
-
   <div class="card">
     <h3>Session 時段</h3>
     <div class="row">
-      <input id="prefixInput" maxlength="2" style="max-width:90px" placeholder="A">
-      <button id="btnSetPrefix">Set Prefix & Reset 設定前綴並重設</button>
-      <button id="btnAdvance" class="btn-green">Next Session 進入下一時段</button>
+      <input id="prefixInput" placeholder="Prefix 前綴 e.g. A" style="max-width:160px">
+      <button id="btnSetPrefix">Set Prefix 設前綴</button>
+      <button id="btnAdvance" class="btn-amber">Advance Session 進下一時段</button>
     </div>
-    <label style="margin-top:10px">Avg. minutes per ticket 平均每籌處理時間（分鐘）
-      <input type="number" id="avgMinutes" min="1" max="60" style="max-width:140px">
-    </label>
-    <p class="muted" style="margin-top:8px">Numbers restart from 001 in each session. 每個時段由 001 重新開始。</p>
+    <label>Avg. minutes per ticket 平均每籌處理時間（分鐘）</label>
+    <input id="avgMinutes" type="number" min="1" value="3" style="max-width:140px">
+    <p class="muted" style="margin-top:6px">Numbers restart from 001 in each session. 每個時段由 001 重新開始。改完平均時間撳 Enter 自動儲存。</p>
   </div>
 
   <div class="card">
     <h3>Counters 櫃位</h3>
     <div id="counterList"></div>
-    <div class="row">
+    <div class="row" style="margin-top:10px">
       <input id="newCounterName" placeholder="Counter 1" style="max-width:180px">
       <input id="newCounterZh" placeholder="一號櫃位" style="max-width:180px">
       <button id="btnAddCounter">Add Counter 新增櫃位</button>
@@ -40,54 +38,64 @@
   <div class="card">
     <h3>Announcement 廣播</h3>
     <div class="row">
-      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="langEn" style="width:auto">English</label>
-      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="langYue" style="width:auto">粵語</label>
-      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="langZh" style="width:auto">普通話</label>
-      <label>Rate 語速<input type="number" id="ttsRate" min="0.6" max="1.5" step="0.1" style="max-width:90px"></label>
-      <label>Volume 音量<input type="number" id="ttsVol" min="0" max="1" step="0.1" style="max-width:90px"></label>
-      <label>Repeat 次數<input type="number" id="ttsRepeat" min="1" max="3" style="max-width:90px"></label>
+      <label style="margin:0; display:flex; align-items:center; gap:6px"><input type="checkbox" id="langEn" style="width:auto"> English</label>
+      <label style="margin:0; display:flex; align-items:center; gap:6px"><input type="checkbox" id="langYue" style="width:auto"> 粵語</label>
+      <label style="margin:0; display:flex; align-items:center; gap:6px"><input type="checkbox" id="langZh" style="width:auto"> 普通話</label>
+    </div>
+    <label>Repeat 重複次數</label>
+    <input id="ttsRepeat" type="number" min="1" max="5" value="1" style="max-width:100px">
+    <div class="row" style="margin-top:12px">
       <button id="btnTest" class="btn-amber">Test 試播</button>
     </div>
   </div>
 
   <div class="card">
-    <h3>Screen Texts 螢幕文字</h3>
-    <label>Title (EN) 標題<input id="setTitle"></label>
-    <label>Subtitle (中文) 副標題<input id="setSubtitle"></label>
-    <label>Screen Note 螢幕提示<input id="setNote"></label>
-    <p class="muted" style="margin-top:12px; font-size:12px; background:#f1f5f9; padding:10px; border-radius:8px; border:1px solid var(--line);">
-      ⚠️ 這些設定僅影響螢幕顯示，<strong>小票排版與內容已固定，無法於此更改</strong>。<br>
-      These settings only affect screens. <strong>Ticket layout & content are fixed.</strong>
-    </p>
+    <h3>Screen Texts 屏幕文字</h3>
+    <label>Title 標題</label><input id="setTitle">
+    <label>Subtitle 副標題</label><input id="setSubtitle">
+    <label>Note 提示</label><input id="setNote">
   </div>
 
-  <button id="btnSave" class="btn-green" style="padding:18px;font-size:20px">SAVE 儲存</button>
+  <button id="btnSave">SAVE 儲存所有設定</button>
 </div>
 <div id="toast" class="toast"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="js/config.js"></script><script src="js/common.js"></script><script src="js/tts.js"></script>
 <script>
+/* ===== 密碼保護 ===== */
+const ADMIN_PW = 'ktmc2026';   // ← 喺度改你自己嘅密碼
+(function(){
+  const lock = document.getElementById('lock');
+  if (sessionStorage.getItem('adminOk') === '1') lock.style.display = 'none';
+  const tryUnlock = () => {
+    if (document.getElementById('pwInput').value === ADMIN_PW){
+      sessionStorage.setItem('adminOk','1');
+      lock.style.display = 'none';
+    } else {
+      document.getElementById('pwErr').textContent = 'Wrong password 密碼錯誤';
+    }
+  };
+  document.getElementById('pwBtn').onclick = tryUnlock;
+  document.getElementById('pwInput').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+})();
+
 const $ = id => document.getElementById(id);
 let loaded = false;
-
-/* 安全讀取櫃位列表（永遠返回陣列） */
 function counters(){ return (STATE && STATE.settings && STATE.settings.counters) || []; }
 
-setTimeout(() => {
-  if (!STATE) toast('⚠️ 無法載入資料：請檢查 Firebase Rules 或網絡。Cannot load data: check Firebase Rules / network.', 8000);
-}, 3000);
+setTimeout(() => { if (!STATE) toast('⚠️ 無法載入資料：檢查網絡／Rules。Cannot load data.', 8000); }, 3000);
 
 onState(s => {
   $('sessChip').textContent = `Session 時段 ${s.session.prefix} · Next 下一籌 ${s.session.prefix}${String(s.session.next).padStart(3,'0')}`;
   renderCounters();
   if (!loaded){
     loaded = true;
-    const t = s.settings.tts || { languages:['en','yue','zh'], rate:1, volume:1, repeat:1 };
-    $('langEn').checked  = t.languages.includes('en');
+    const t = s.settings.tts || { languages:['en','yue','zh'], repeat:1 };
+    $('langEn').checked = t.languages.includes('en');
     $('langYue').checked = t.languages.includes('yue');
-    $('langZh').checked  = t.languages.includes('zh');
-    $('ttsRate').value = t.rate; $('ttsVol').value = t.volume; $('ttsRepeat').value = t.repeat;
+    $('langZh').checked = t.languages.includes('zh');
+    $('ttsRepeat').value = t.repeat || 1;
     $('setTitle').value = s.settings.title;
     $('setSubtitle').value = s.settings.subtitle;
     $('setNote').value = s.settings.note;
@@ -95,10 +103,12 @@ onState(s => {
     $('prefixInput').placeholder = s.session.prefix;
   }
 });
+
 function renderCounters(){
   $('counterList').innerHTML = counters().map(c => `
-    <div class="row">
-      <span style="min-width:110px">${c.name}</span><span class="hk" style="min-width:110px">${c.nameZh}</span>
+    <div class="row" style="margin-bottom:8px">
+      <span style="min-width:110px; font-weight:600">${c.name}</span>
+      <span class="hk" style="min-width:110px">${c.nameZh}</span>
       <a href="counter.html?id=${c.id}" target="_blank"><button class="btn-gray">Open 開啟</button></a>
       <button onclick="removeCounter(${c.id})">Remove 移除</button>
     </div>`).join('') || '<p class="muted">No counters 暫無櫃位</p>';
@@ -106,8 +116,8 @@ function renderCounters(){
 function guard(){ if (!STATE){ toast('⚠️ 資料未載入 Data not loaded'); return false; } return true; }
 async function removeCounter(id){
   if (!guard()) return;
-  const c = counterById(id);
-  if (!confirm(`Remove ${c.name} ${c.nameZh}?\n移除${c.name} ${c.nameZh}？`)) return;
+  const c = counters().find(x => x.id === id);
+  if (!confirm(`Remove ${c ? c.name + ' ' + c.nameZh : id}?\n移除櫃位？`)) return;
   await saveSettings({ ...STATE.settings, counters: counters().filter(x => x.id !== id) });
   toast('Removed 已移除');
 }
@@ -120,27 +130,27 @@ $('btnAddCounter').onclick = async () => {
   $('newCounterName').value = $('newCounterZh').value = '';
   toast('Added 已新增');
 };
-$('btnSetPrefix').onclick = () => {
+$('btnSetPrefix').onclick = async () => {
   if (!guard()) return;
   const p = $('prefixInput').value.trim().toUpperCase();
   if (!p) return toast('Please enter a prefix 請輸入前綴');
-  if (!confirm(`Set prefix to "${p}" and reset numbers to 001?\n設定前綴為「${p}」，號碼由 001 重新開始？\n\nCurrent waiting tickets will be expired.\n現時等候籌號將作廢。`)) return;
-  setPrefix(p);
+  if (!confirm(`Set prefix to "${p}" and restart from 001?\n設定前綴為「${p}」，號碼由 001 重新開始？\nCurrent waiting tickets will be expired. 現時等候籌號將作廢。`)) return;
+  await setPrefix(p);
   toast('Session updated 時段已更新');
 };
-$('btnAdvance').onclick = () => {
+$('btnAdvance').onclick = async () => {
   if (!guard()) return;
   const cur = STATE.session.prefix;
   const np = cur.length === 1 ? String.fromCharCode(cur.charCodeAt(0) + 1) : cur + 'A';
-  if (!confirm(`Advance to Session ${np}?\n進入時段 ${np}？\n\nNumbers will restart from 001 and current waiting tickets will be expired.\n號碼將由 001 重新開始，現時等候籌號將作廢。`)) return;
-  advance();
-  toast('Session advanced 已進入下一時段');
+  if (!confirm(`Advance to Session ${np}?\n進入時段 ${np}？\nNumbers will restart from 001. 號碼將由 001 重新開始。`)) return;
+  await advance();
+  toast('Advanced 已進下一時段');
 };
 function getLangs(){ return ['en','yue','zh'].filter(l => ({en:$('langEn'), yue:$('langYue'), zh:$('langZh')})[l].checked); }
 $('btnTest').onclick = () => {
   if (!guard()) return;
   const c = counters()[0] || { name:'Counter 1', nameZh:'一號櫃位' };
-  announce(getLangs(), { ...STATE.settings.tts, phrases: {
+  announce(getLangs(), { repeat: +$('ttsRepeat').value || 1, phrases: {
     en:  buildPhrase('en',  'A001', c),
     yue: buildPhrase('yue', 'A001', c),
     zh:  buildPhrase('zh',  'A001', c)
@@ -155,15 +165,14 @@ $('btnSave').onclick = async () => {
     note: $('setNote').value,
     counters: counters(),
     avgMinutes: +$('avgMinutes').value || 3,
-    tts: { languages: getLangs(), rate:+$('ttsRate').value, volume:+$('ttsVol').value, repeat:+$('ttsRepeat').value }
+    tts: { languages: getLangs(), repeat: +$('ttsRepeat').value || 1 }
   });
   toast('Saved 已儲存');
 };
-  /* 平均分鐘：改完自動儲存（唔使再撳大 SAVE） */
-document.getElementById('avgMinutes').addEventListener('change', async function(){
+/* 平均分鐘：改完自動儲存 */
+$('avgMinutes').addEventListener('change', async function(){
   if (!STATE) return;
-  const cs = (STATE.settings && STATE.settings.counters) || [];
-  await saveSettings({ ...STATE.settings, counters: cs, avgMinutes: +this.value || 3 });
+  await saveSettings({ ...STATE.settings, counters: counters(), avgMinutes: +this.value || 3 });
   toast('Avg minutes saved 已儲存平均時間');
 });
 </script>
