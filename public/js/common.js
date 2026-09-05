@@ -129,3 +129,15 @@ async function advance(){
   await setPrefix(c.length===1 ? String.fromCharCode(c.charCodeAt(0)+1) : c+'A');
 }
 async function saveSettings(s){ await stateRef.child('settings').set(s); }
+
+/* 清除所有籌號數據（重印來源一併清除），號碼由 001 重新開始；設定與櫃位保留 */
+async function clearTickets(){
+  await stateRef.update({
+    tickets: null,
+    lastCall: null,
+    lastUndo: null,
+    lastStop: null,
+    nowPlaying: null,
+    'session/next': 1
+  });
+}
