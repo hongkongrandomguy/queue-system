@@ -112,3 +112,20 @@ input,select{width:100%; padding:10px; border-radius:10px; border:1px solid #d1d
   #printArea .t-note{font-size:13px; margin-top:4mm; padding-top:2.5mm;
     border-top:0.3mm dashed #666; line-height:1.8; text-align:left}
 }
+/* ===== 強制修正：叫號格仔（追加到檔案最尾） ===== */
+.display-wrap .call-grid{display:grid !important; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)) !important;
+  gap:12px !important; align-content:start !important; overflow-y:auto !important;}
+.display-wrap .call-item{display:grid !important; grid-template-columns:1fr auto !important;
+  grid-template-rows:auto auto 1fr !important; height:180px !important; align-items:center !important;
+  column-gap:14px !important; overflow:hidden !important; padding:10px 18px !important;
+  border-radius:14px !important; background:#182642 !important;}
+.display-wrap .call-item .ci-en{grid-column:1 !important; grid-row:1 !important;
+  font-size:26px !important; font-weight:600 !important; color:#aecbfa !important; line-height:1.2 !important;}
+.display-wrap .call-item .ci-zh{grid-column:1 !important; grid-row:2 !important;
+  font-size:26px !important; font-weight:600 !important; color:#aecbfa !important; line-height:1.2 !important;}
+.display-wrap .call-item .ci-id{grid-column:2 !important; grid-row:1 / span 2 !important;
+  font-size:54px !important; font-weight:700 !important; color:#aecbfa !important; line-height:1 !important;}
+.display-wrap .call-item .ci-num{grid-column:1 / -1 !important; grid-row:3 !important; align-self:center !important;
+  text-align:center !important; font-size:54px !important; font-weight:700 !important;
+  letter-spacing:2px !important; line-height:1 !important; color:#f8fafc !important;}
+.display-wrap .call-item.active .ci-num{color:#fbbf24 !important; animation:flash 1.2s ease-in-out 6 !important;}
