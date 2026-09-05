@@ -112,3 +112,45 @@ input,select{width:100%; padding:10px; border-radius:10px; border:1px solid #d1d
   #printArea .t-note{font-size:13px; margin-top:4mm; padding-top:2.5mm;
     border-top:0.3mm dashed #666; line-height:1.8; text-align:left}
 }
+/* ===== 手機版（≤768px）：防出界、防走位 ===== */
+@media (max-width:768px){
+  .topbar{padding:12px 14px; font-size:15px}
+  .chip{font-size:11px; padding:4px 10px}
+  .card{padding:14px; border-radius:12px}
+  .card h3{font-size:16px}
+
+  /* Kiosk 取號頁 */
+  #takeBtn{font-size:26px; border-radius:20px; height:min(420px,55vh); letter-spacing:0}
+  #newTicket{font-size:64px; letter-spacing:4px}
+  #note{font-size:14px; padding:0 12px}
+
+  /* Counter 櫃位頁 */
+  .counter-wrap{padding:12px; gap:12px}
+  .big-num{font-size:48px; letter-spacing:2px}
+  .btn-grid{gap:10px}
+  .btn-grid button{padding:14px 6px; font-size:16px; border-radius:12px}
+  .keypad{max-width:100%}
+  .keypad button{font-size:18px; padding:12px}
+  .waiting-list span{font-size:12px; padding:5px 8px}
+
+  /* Admin 管理頁 */
+  .admin-wrap{padding:12px; gap:12px}
+  .row{gap:8px}
+  .row>*{flex:1 1 auto}
+  .admin-wrap input:not([type=checkbox]), .admin-wrap select{width:100% !important; max-width:none !important}
+  .admin-wrap input[type=checkbox]{width:auto !important}
+  #btnSave{padding:14px; font-size:17px}
+
+  /* Display（手機開咗都唔會出界） */
+  .display-wrap{padding:8px; gap:8px}
+  .display-header{font-size:14px; flex-wrap:wrap; gap:4px}
+  .display-wrap .call-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)) !important; gap:8px !important}
+  .call-item{height:120px !important; padding:6px 8px !important; column-gap:8px !important}
+  .call-item .ci-en{font-size:14px !important}
+  .call-item .ci-zh{font-size:14px !important}
+  .call-item .ci-id{font-size:28px !important}
+  .call-item .ci-num{font-size:28px !important; letter-spacing:1px !important}
+  .queue-panel h2{font-size:16px}
+  .queue-items span{font-size:16px; padding:6px 10px}
+  #startTts{font-size:14px; padding:10px 14px}
+}
