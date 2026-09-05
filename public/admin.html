@@ -150,5 +150,12 @@ $('btnSave').onclick = async () => {
   });
   toast('Saved 已儲存');
 };
+  /* 平均分鐘：改完自動儲存（唔使再撳大 SAVE） */
+document.getElementById('avgMinutes').addEventListener('change', async function(){
+  if (!STATE) return;
+  const cs = (STATE.settings && STATE.settings.counters) || [];
+  await saveSettings({ ...STATE.settings, counters: cs, avgMinutes: +this.value || 3 });
+  toast('Avg minutes saved 已儲存平均時間');
+});
 </script>
 </body></html>
