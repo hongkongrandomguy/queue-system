@@ -4,7 +4,7 @@ let currentAudio = null, currentResolve = null, announceToken = 0;
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 /* ===== 外接 TTS 設定 ===== */
-const VOICERSS_KEY = '';   // ← 貼上 VoiceRSS 免費 key（留空＝直接用瀏覽器 TTS）
+const VOICERSS_KEY = '38df71ac2202487f818f87902d693a20';   // ← 貼上 VoiceRSS 免費 key（留空＝直接用瀏覽器 TTS）
 const VR_LANG = { 'en-US':'en-us', 'zh-HK':'zh-hk', 'zh-CN':'zh-cn' };
 
 /* ===== 文字映射（clip 路徑 → 朗讀文字＋語言） ===== */
@@ -15,9 +15,9 @@ const TTS_DIG = {
   zh:['零','一','二','三','四','五','六','七','八','九']
 };
 const TTS_WORDS = {
-  en:{ Ticket:'Ticket number', counter:'please go to counter' },
+  en:{ Ticket:'Ticket', counter:'please go to counter' },
   yue:{ ticket:'籌號', goto:'請到', suffix:'號櫃位' },
-  zh:{ ticket:'号码', goto:'请到', suffix:'号柜台' }
+  zh:{ ticket:'筹号', goto:'请到', suffix:'号柜台' }
 };
 function ttsInfoFor(path){
   const i = path.indexOf('/');
