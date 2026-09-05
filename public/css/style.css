@@ -53,16 +53,18 @@ a{text-decoration:none}
 .display-wrap .muted,.display-wrap .hk{color:#8fa3c8}
 
 /* 已叫號格仔：左＝大號碼（高度=右兩行總和），右＝Counter / 櫃位 兩行 */
-.display-wrap .call-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:12px;
-  align-content:start; overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none}
-.display-wrap .call-grid::-webkit-scrollbar{display:none}
-.call-item{height:190px; display:flex; flex-direction:row; align-items:center; justify-content:center; gap:18px;
-  overflow:hidden; padding:8px 14px; border-radius:14px; background:#182642}
-.call-item .ci-num{font-size:112px; font-weight:800; letter-spacing:2px; line-height:1; color:#f8fafc}
-.call-item .ci-names{display:flex; flex-direction:column; justify-content:center; gap:8px; text-align:left}
-.call-item .ci-en{font-size:44px; font-weight:700; color:#aecbfa; line-height:1}
-.call-item .ci-zh{font-size:44px; font-weight:700; color:#aecbfa; line-height:1}
-.call-item.active .ci-num{color:#fbbf24; animation:flash 1.2s ease-in-out 6}
+/* 已叫號格仔：左 Counter／櫃位 兩行、右櫃位號碼、底部叫號；減粗減大 */
+.display-wrap .call-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px;
+  align-content:start; overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;}
+.display-wrap .call-grid::-webkit-scrollbar{display:none;}
+.call-item{height:180px; display:grid; grid-template-columns:1fr auto; grid-template-rows:auto auto 1fr;
+  align-items:center; column-gap:14px; overflow:hidden; padding:10px 18px; border-radius:14px; background:#182642;}
+.call-item .ci-en{grid-column:1; grid-row:1; font-size:26px; font-weight:600; color:#aecbfa; line-height:1.2;}
+.call-item .ci-zh{grid-column:1; grid-row:2; font-size:26px; font-weight:600; color:#aecbfa; line-height:1.2;}
+.call-item .ci-id{grid-column:2; grid-row:1 / span 2; font-size:54px; font-weight:700; color:#aecbfa; line-height:1;}
+.call-item .ci-num{grid-column:1 / -1; grid-row:3; align-self:center; text-align:center;
+  font-size:54px; font-weight:700; letter-spacing:2px; line-height:1; color:#f8fafc;}
+.call-item.active .ci-num{color:#fbbf24; animation:flash 1.2s ease-in-out 6;}
 @keyframes flash{0%,100%{opacity:1}50%{opacity:.25}}
 
 /* 等候區：單排、空間不夠自動橫向滾動 */
