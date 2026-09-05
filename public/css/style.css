@@ -32,7 +32,7 @@ a{text-decoration:none}
 .center{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px}
 
 /* Kiosk 取號頁 */
-#takeBtn{width:min(520px,86vw); height:min(520px,60vh); border-radius:32px; font-size:42px; line-height:1.35; font-weight:800;
+#takeBtn{width:min(560px,90vw); height:min(420px,52vh); border-radius:32px; font-size:42px; line-height:1.35; font-weight:800;
   background:linear-gradient(160deg,#3b82f6,#1e3a8a); box-shadow:0 14px 40px rgba(30,64,175,.4); letter-spacing:1px;
   animation:breath 2.6s ease-in-out infinite}
 @keyframes breath{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
@@ -58,7 +58,7 @@ a{text-decoration:none}
 .waiting-list .called-chip{cursor:pointer; background:#fef3c7; border-color:#f59e0b; color:#92400e}
 .waiting-list .called-chip.cur{background:#f59e0b; border-color:#f59e0b; color:#fff}
 
-/* Display 大屏幕（保持不變） */
+/* Display 大屏幕（保持舞台版設計） */
 .display-wrap{height:100vh; display:grid; grid-template-rows:auto 1fr auto; padding:12px; gap:12px;
   background:#0b1220; color:#f8fafc; overflow:hidden}
 .display-header{display:flex; justify-content:space-between; align-items:center; font-size:22px; font-weight:700;
@@ -157,6 +157,8 @@ input:focus,select:focus{outline:none; border-color:var(--accent2); box-shadow:0
     font-family:'Microsoft JhengHei','微軟正黑體',sans-serif;
     font-size:13px; line-height:1.6; padding:3mm 0; font-weight:400;
   }
+  #printArea .t-reprint{display:inline-block; font-size:14px; font-weight:700; letter-spacing:1px;
+    border:0.3mm solid #000; padding:1mm 2.5mm; margin-bottom:2mm;}
   #printArea .t-head{display:flex; align-items:center; gap:2.5mm; padding-bottom:2.5mm; margin-bottom:3mm;
     border-bottom:0.3mm solid #000}
   #printArea .t-head img{width:14mm; height:14mm; object-fit:contain; flex:0 0 auto}
