@@ -26,6 +26,22 @@
   </div>
 
   <div class="card">
+    <h3>Manual Announcement 手動播報</h3>
+    <div class="row">
+      <input id="manLabel" placeholder="Ticket 號碼 e.g. A005" style="max-width:200px">
+      <select id="manCounter" style="max-width:240px"></select>
+      <button id="btnManPlay" class="btn-amber">Play 加入播報隊列</button>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div id="nowPlaying" class="muted">Not playing 目前無播報</div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="btnStopCur">Stop Current 停止正在播</button>
+      <button id="btnStopAll" style="background:linear-gradient(135deg,#ef4444,#b91c1c); box-shadow:0 4px 14px rgba(239,68,68,.35)">Stop All 全部停止</button>
+    </div>
+  </div>
+
+  <div class="card">
     <h3>Counters 櫃位</h3>
     <div id="counterList"></div>
     <div class="row" style="margin-top:10px">
@@ -64,7 +80,7 @@
 <script src="js/config.js"></script><script src="js/common.js"></script><script src="js/tts.js"></script>
 <script>
 /* ===== 密碼保護 ===== */
-const ADMIN_PW = 'ktmc2026';   // ← 喺度改你自己嘅密碼
+const ADMIN_PW = 'ktmc2026';   // ← 改你自己嘅密碼
 (function(){
   const lock = document.getElementById('lock');
   if (sessionStorage.getItem('adminOk') === '1') lock.style.display = 'none';
@@ -89,6 +105,18 @@ setTimeout(() => { if (!STATE) toast('⚠️ 無法載入資料：檢查網絡�
 onState(s => {
   $('sessChip').textContent = `Session 時段 ${s.session.prefix} · Next 下一籌 ${s.session.prefix}${String(s.session.next).padStart(3,'0')}`;
   renderCounters();
+
+  /* 手動播報：櫃位下拉 */
+  const sel = $('manCounter'); const cs = counters();
+  if (sel.options.length !== cs.length){
+    sel.innerHTML = cs.map(c => `<option value="${c.id}">${c.name} ${c.nameZh}</option>`).join('');
+  }
+  /* 而家播緊 */
+  const np = s.nowPlaying;
+  $('nowPlaying').innerHTML = np
+    ? `Now playing 正在播報：<b style="color:var(--text)">${np.label}</b> → ${counterById(np.counter).name} ${counterById(np.counter).nameZh}`
+    : 'Not playing 目前無播報';
+
   if (!loaded){
     loaded = true;
     const t = s.settings.tts || { languages:['en','yue','zh'], repeat:1 };
@@ -103,6 +131,33 @@ onState(s => {
     $('prefixInput').placeholder = s.session.prefix;
   }
 });
+
+/* ===== 手動播報 ===== */
+$('btnManPlay').onclick = async () => {
+  if (!guard()) return;
+  const label = $('manLabel').value.trim().toUpperCase();
+  const cid = $('manCounter').value;
+  if (!label || !cid) return toast('Please fill ticket & counter 請填寫號碼同櫃位');
+  const seq = await nextSeq('callSeq');   // 參與同一播報隊列
+  await stateRef.child('lastCall').set({
+    ticket: { label, no: Number(label.replace(/\D/g,'')) || 0 },
+    counter: Number(cid), at: Date.now(), seq, manual: true
+  });
+  toast('Queued 已加入播報隊列：' + label);
+  $('manLabel').value = '';
+};
+$('btnStopCur').onclick = async () => {
+  if (!guard()) return;
+  const np = STATE.nowPlaying;
+  if (!np) return toast('Nothing playing 目前無播報');
+  await stopCall(np.counter);
+  toast('Stopped 已停止 ' + np.label);
+};
+$('btnStopAll').onclick = async () => {
+  if (!guard()) return;
+  await stopAll();
+  toast('All stopped 已全部停止');
+};
 
 function renderCounters(){
   $('counterList').innerHTML = counters().map(c => `
@@ -169,7 +224,6 @@ $('btnSave').onclick = async () => {
   });
   toast('Saved 已儲存');
 };
-/* 平均分鐘：改完自動儲存 */
 $('avgMinutes').addEventListener('change', async function(){
   if (!STATE) return;
   await saveSettings({ ...STATE.settings, counters: counters(), avgMinutes: +this.value || 3 });
