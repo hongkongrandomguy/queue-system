@@ -1,4 +1,4 @@
-/* 音檔優先 → Edge 神經 TTS → 瀏覽器 TTS；支援自定義廣播詞混合播放 */
+/* 音檔優先 → Edge 神經 TTS（缺檔自動合併成句）→ 瀏覽器 TTS */
 const AUDIO_EXT = '.mp3';
 let currentAudio = null, currentResolve = null, announceToken = 0, edgeAbort = null;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -16,7 +16,6 @@ const TTS_WORDS = {
   zh:{ ticket:'筹号', goto:'请到', suffix:'号柜台' }
 };
 const EDGE_VOICES = { 'en-US':'en-US-AriaNeural', 'zh-HK':'zh-HK-HiuGaaiNeural', 'zh-CN':'zh-CN-XiaoxiaoNeural' };
-/* 自定義文本中可匹配到現有錄音嘅詞 */
 const CLIP_WORDS = {
   en:{ 'please go to counter':'en/counter', 'ticket':'en/Ticket' },
   yue:{ '請往':'yue/goto', '號櫃位':'yue/suffix', '籌號':'yue/ticket' },
@@ -33,7 +32,24 @@ function ttsInfoFor(path){
   return w ? { text: w, lang: TTS_LANG[lang] } : null;
 }
 
-/* ===== Edge 神經 TTS：合成文字 → dataURL ===== */
+/* ===== 音檔存在檢查（快取） ===== */
+const clipCache = {};
+async function clipExists(path){
+  if (path in clipCache) return clipCache[path];
+  let v = false;
+  try{
+    const r = await fetch('audio/' + path + AUDIO_EXT, { method:'HEAD' });
+    if (r.ok) v = true;
+    else {
+      const r2 = await fetch('../audio/' + path + AUDIO_EXT, { method:'HEAD' });
+      v = r2.ok;
+    }
+  }catch(e){ v = false; }
+  clipCache[path] = v;
+  return v;
+}
+
+/* ===== Edge 神經 TTS（48kHz 高碼率） ===== */
 function edgeFetch(text, langCode){
   return new Promise(res => {
     const uuid = (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : String(Date.now()) + Math.random().toString().slice(2));
@@ -56,7 +72,7 @@ function edgeFetch(text, langCode){
     edgeAbort = () => finish(false);
     const now = () => new Date().toString();
     ws.onopen = () => {
-      ws.send(`X-Timestamp:${now()}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"true"},"outputFormats":["audio-24khz-48kbitrate-mono-mp3"]}}}}\r\n`);
+      ws.send(`X-Timestamp:${now()}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"true"},"outputFormats":["audio-48khz-96kbitrate-mono-mp3"]}}}}\r\n`);
       ws.send(`X-RequestId:${uuid}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${now()}\r\nPath:ssml\r\n\r\n<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${langCode}"><voice name="${EDGE_VOICES[langCode] || EDGE_VOICES['en-US']}"><prosody pitch="+0Hz" rate="+0%" volume="+0%">${escapeXml(text)}</prosody></voice></speak>`);
     };
     ws.onmessage = ev => {
@@ -74,7 +90,7 @@ function edgeFetch(text, langCode){
   });
 }
 
-/* ===== 朗讀任意文字（快取 → Edge → 瀏覽器） ===== */
+/* ===== 朗讀文字（快取 → Edge → 瀏覽器） ===== */
 function speakText(text, langCode){
   return new Promise(res => {
     const my = announceToken;
@@ -105,13 +121,13 @@ function speakText(text, langCode){
     if (cached) return playSrc(cached);
     edgeFetch(text, langCode).then(data => {
       if (announceToken !== my) return res();
-      if (data){ try{ localStorage.setItem(ck, data); }catch(e){} playSrc(data); }
-      else browserSpeak();
+      if (data){ console.log('[TTS] Edge neural:', text); try{ localStorage.setItem(ck, data); }catch(e){} playSrc(data); }
+      else { console.warn('[TTS] Edge 失敗 → 瀏覽器 TTS:', text); browserSpeak(); }
     });
   });
 }
 
-/* ===== 播放 clip（本地音檔 → TTS 後備） ===== */
+/* ===== 播放 clip ===== */
 function playClip(path){
   const my = announceToken;
   return new Promise(res => {
@@ -144,7 +160,7 @@ function stopAudio(){
 }
 function chime(){ return playClip('chime'); }
 
-/* ===== 自定義廣播詞解析（原錄音＋TTS 混合） ===== */
+/* ===== 自定義廣播詞解析 ===== */
 function counterNum(counter){
   let raw = '1';
   if (counter && counter.name){ const n = String(counter.name).replace(/\D/g,''); if (n) raw = n; }
@@ -163,7 +179,11 @@ function literalSeq(lang, text){
     let matched = null;
     for (const k of keys){ if (lower.startsWith(k.toLowerCase(), i)){ matched = k; break; } }
     if (matched){ flush(); items.push({ c: words[matched] }); i += matched.length; continue; }
-    if (/[A-Za-z]/.test(ch)){ flush(); items.push({ c: lang + '/' + ch.toUpperCase() }); i++; continue; }
+    if (/[A-Za-z]/.test(ch)){
+      const standalone = !/[A-Za-z]/.test(text[i-1] || '') && !/[A-Za-z]/.test(text[i+1] || '');
+      if (standalone){ flush(); items.push({ c: lang + '/' + ch.toUpperCase() }); i++; continue; }
+      buf += ch; i++; continue;
+    }
     buf += ch; i++;
   }
   flush();
@@ -194,7 +214,6 @@ function parseCustom(lang, tpl, label, counter){
   return seq;
 }
 
-/* ===== 組廣播序列（預設／自定義） ===== */
 function buildPhrase(lang, numLabel, counter, ttsCfg){
   const t = ttsCfg || (STATE && STATE.settings && STATE.settings.tts) || {};
   const custom = t.custom || {};
@@ -216,7 +235,7 @@ function buildPhrase(lang, numLabel, counter, ttsCfg){
           'zh/goto', ...cid.map(d=>'zh/'+d), 'zh/suffix'];
 }
 
-/* ===== 播放（支援 string=clip / {c}=clip / {t}=TTS 文字） ===== */
+/* ===== 播放：有錄音播錄音；缺檔合併成整句 TTS ===== */
 async function announce(languages, opts, cancel){
   if (cancel) stopAudio();
   const my = announceToken;
@@ -224,18 +243,43 @@ async function announce(languages, opts, cancel){
   for (const lang of languages){
     const seq = opts.phrases && opts.phrases[lang];
     if (!seq) continue;
+    const langCode = TTS_LANG[lang];
+    const isCJK = c => /[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(c);
     for (let i=0; i<reps; i++){
       if (announceToken !== my) return;
       await chime();
       if (announceToken !== my) return;
       await wait(300);
+      let buf = '';
+      const appendBuf = t => {
+        if (!t) return;
+        if (!buf){ buf = t; return; }
+        buf += (isCJK(buf.slice(-1)) || isCJK(t[0])) ? t : ' ' + t;
+      };
+      const flush = async () => {
+        if (buf.trim()){
+          const t = buf.trim(); buf = '';
+          await speakText(t, langCode);
+        }
+      };
       for (const p of seq){
         if (announceToken !== my) return;
-        if (typeof p === 'string') await playClip(p);
-        else if (p.c) await playClip(p.c);
-        else if (p.t) await speakText(p.t, TTS_LANG[lang]);
-        await wait(150);
+        const path = typeof p === 'string' ? p : (p.c || null);
+        if (path){
+          if (await clipExists(path)){
+            await flush();
+            if (announceToken !== my) return;
+            await playClip(path);
+          } else {
+            const info = ttsInfoFor(path);
+            if (info) appendBuf(info.text);
+          }
+        } else if (p.t){
+          appendBuf(p.t);
+        }
+        await wait(80);
       }
+      await flush();
       await wait(400);
     }
   }
