@@ -171,7 +171,7 @@ input:focus,select:focus{outline:none; border-color:var(--accent2); box-shadow:0
   #printArea .t-note{font-size:13px; margin-top:4mm; padding-top:2.5mm;
     border-top:0.3mm dashed #666; line-height:1.8; text-align:left}
   /* ===== 58mm 票面：紙張保持 80mm、右側 22mm 留空、內容靠左、清晰唔拉長 ===== */
-  #printArea.p58{ width:58mm; margin:0; }
+  #printArea.p58{ width:52mm; margin:0; }
   #printArea.p58 .t-center{ text-align:left; }
   #printArea.p58 .t-head{ gap:2mm; padding-bottom:2mm; margin-bottom:2mm; }
   #printArea.p58 .t-head img{ width:11mm; height:11mm; }
