@@ -12,14 +12,14 @@ const TTS_DIG = {
 };
 const TTS_WORDS = {
   en:{ Ticket:'Ticket', counter:'please go to counter' },
-  yue:{ ticket:'籌號', goto:'請到', suffix:'號櫃位' },
+  yue:{ ticket:'籌號', goto:'請往', suffix:'號櫃位' },
   zh:{ ticket:'筹号', goto:'请到', suffix:'号柜台' }
 };
 const EDGE_VOICES = { 'en-US':'en-US-AriaNeural', 'zh-HK':'zh-HK-HiuGaaiNeural', 'zh-CN':'zh-CN-XiaoxiaoNeural' };
 /* 自定義文本中可匹配到現有錄音嘅詞 */
 const CLIP_WORDS = {
   en:{ 'please go to counter':'en/counter', 'ticket':'en/Ticket' },
-  yue:{ '請到':'yue/goto', '號櫃位':'yue/suffix', '籌號':'yue/ticket' },
+  yue:{ '請往':'yue/goto', '號櫃位':'yue/suffix', '籌號':'yue/ticket' },
   zh:{ '请到':'zh/goto', '号柜台':'zh/suffix', '筹号':'zh/ticket' }
 };
 
