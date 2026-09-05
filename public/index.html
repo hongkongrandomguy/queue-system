@@ -11,8 +11,27 @@
   <div class="btn-grid">
     <a href="kiosk.html"><button style="width:100%">TAKE TICKET<br><span class="hk">取號機</span></button></a>
     <a href="display.html"><button class="btn-green" style="width:100%">DISPLAY<br><span class="hk">大屏幕</span></button></a>
-    <a href="counter.html?id=1"><button class="btn-amber" style="width:100%">COUNTER<br><span class="hk">櫃位 iPad</span></button></a>
+    <button id="btnCounters" class="btn-amber" style="width:100%">COUNTER<br><span class="hk">櫃位選擇</span></button>
     <a href="admin.html"><button class="btn-gray" style="width:100%">ADMIN<br><span class="hk">管理</span></button></a>
   </div>
+  <div class="card" id="counterPick" style="display:none">
+    <h3>Choose Counter 選擇櫃位</h3>
+    <div class="btn-grid" id="counterList"></div>
+  </div>
 </div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="js/config.js"></script><script src="js/common.js"></script>
+<script>
+onState(s => {
+  const cs = (s.settings.counters || []);
+  document.getElementById('counterList').innerHTML = cs.map(c =>
+    `<a href="counter.html?id=${c.id}"><button class="btn-amber" style="width:100%">${c.name}<br><span class="hk">${c.nameZh}</span></button></a>`
+  ).join('') || '<p class="muted">No counters 暫無櫃位</p>';
+});
+document.getElementById('btnCounters').onclick = () => {
+  const el = document.getElementById('counterPick');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+};
+</script>
 </body></html>
