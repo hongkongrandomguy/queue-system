@@ -22,6 +22,8 @@
   background:linear-gradient(135deg,#1d4ed8,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent}
 .k-ticket-card .t-meta{font-size:14px; color:var(--muted); font-weight:600; margin-top:4px}
 .k-back{font-size:13px; color:var(--muted)}
+.rp-chip{background:#f1f5f9; color:var(--text); box-shadow:none; padding:10px 16px; font-size:16px; border-radius:10px}
+.rp-chip:hover{background:#e2e8f0}
 @media (max-width:640px){
   #takeBtn{height:min(300px,44vh); border-radius:26px}
   .k-ticket-card{padding:18px 28px}
@@ -41,6 +43,7 @@
     <div class="k-stat"><small>Waiting 等候中</small><span id="statWait">0</span> 人</div>
     <div class="k-stat"><small>Est. wait 預計等候</small><span id="statEst">—</span></div>
   </div>
+  <button id="btnReprint" class="btn-gray">REPRINT<br><span class="hk">重印小票</span></button>
   <div class="k-note" id="note"></div>
 </div>
 
@@ -59,15 +62,34 @@
   <div class="k-back" id="backCount"></div>
 </div>
 
+<div class="kiosk-wrap" id="reprintView" style="display:none">
+  <div class="k-hero-title">Reprint 重印小票</div>
+  <div class="card" id="rpLock" style="max-width:380px; width:100%; text-align:center">
+    <p class="muted" style="margin-bottom:10px">Admin password required 需要管理員密碼</p>
+    <input type="password" id="rpPw" placeholder="Password 密碼">
+    <div class="row" style="margin-top:12px; justify-content:center">
+      <button id="rpUnlock">Unlock 解鎖</button>
+      <button id="rpBack1" class="btn-gray">Back 返回</button>
+    </div>
+    <p id="rpErr" style="color:#dc2626; font-weight:600; margin-top:8px"></p>
+  </div>
+  <div class="card" id="rpList" style="display:none; max-width:760px; width:100%; max-height:62vh; overflow:auto; text-align:left">
+    <h3 style="border:none; padding:0; margin-bottom:10px">Choose ticket 選擇要重印嘅籌號</h3>
+    <div id="rpItems" style="display:flex; flex-wrap:wrap; gap:8px"></div>
+    <div class="row" style="margin-top:14px"><button id="rpBack2" class="btn-gray">Back 返回</button></div>
+  </div>
+</div>
+
 <div id="printArea"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="js/config.js"></script><script src="js/common.js"></script>
 <script>
 const $ = id => document.getElementById(id);
+const ADMIN_PW = 'ktmc2026';   // ← 與 admin 相同密碼，改密碼時兩邊一齊改
 let busy = false, backTimer = null, takenNo = null, shownAt = 0;
 
-/* 點擊／觸碰任何位置 → 返回首頁（取號後 1.5 秒先生效，防誤觸） */
+/* 點擊／觸碰任何位置 → 返回首頁（只限取號票畫面） */
 document.addEventListener('pointerdown', () => {
   if (takenNo != null && Date.now() - shownAt > 1500) goHome();
 });
@@ -91,19 +113,10 @@ onState(s => {
   }
 });
 
-$('takeBtn').onclick = async () => {
-  if (busy) return; busy = true;
-  const t = await takeTicket();
-  takenNo = t.no;
-  shownAt = Date.now();
-
-  $('tvNum').textContent = t.label;
-  $('tvMeta').textContent = `Session ${STATE.session.prefix} · ${t.time}`;
-  $('homeView').style.display = 'none';
-  $('ticketView').style.display = 'flex';
-
-  /* 打印（小票格式完全不變） */
-  $('printArea').innerHTML = `
+/* ===== 小票模板（reprint=true 加重新列印標記＋重印時間） ===== */
+function ticketHTML(t, reprint){
+  return `
+    ${reprint ? '<div class="t-reprint">Reprinted 重新列印</div>' : ''}
     <div class="t-head">
       <img src="img/logo.png" alt="logo">
       <div>
@@ -116,6 +129,7 @@ $('takeBtn').onclick = async () => {
       <div class="t-title-en">QUEUE TICKET</div>
       <div class="t-num">${t.label}</div>
       <div class="t-row">發行時間 Issuing Time: ${t.time}</div>
+      ${reprint ? `<div class="t-row">重印時間 Reprint Time: ${nowLabel()}</div>` : ''}
       <div class="t-row">時段 Session: ${STATE.session.prefix}</div>
     </div>
     <div class="t-note">
@@ -124,9 +138,23 @@ $('takeBtn').onclick = async () => {
       如叫號時不在現場，將順延至下一位。<br>
       If you are not present when called, your number will be passed to the next.
     </div>`;
+}
+
+/* ===== 取號 ===== */
+$('takeBtn').onclick = async () => {
+  if (busy) return; busy = true;
+  const t = await takeTicket();
+  takenNo = t.no;
+  shownAt = Date.now();
+
+  $('tvNum').textContent = t.label;
+  $('tvMeta').textContent = `Session ${STATE.session.prefix} · ${t.time}`;
+  $('homeView').style.display = 'none';
+  $('ticketView').style.display = 'flex';
+
+  $('printArea').innerHTML = ticketHTML(t, false);
   setTimeout(() => window.print(), 300);
 
-  /* 10 秒自動返回＋點擊任意位置返回 */
   let sec = 10;
   $('backCount').textContent = `Tap anywhere to return 點擊任意位置返回 · ${sec}s`;
   clearInterval(backTimer);
@@ -142,7 +170,43 @@ function goHome(){
   clearInterval(backTimer);
   takenNo = null;
   $('ticketView').style.display = 'none';
+  $('reprintView').style.display = 'none';
   $('homeView').style.display = 'flex';
 }
+
+/* ===== 重印 ===== */
+$('btnReprint').onclick = () => {
+  $('homeView').style.display = 'none';
+  $('reprintView').style.display = 'flex';
+  $('rpLock').style.display = 'block';
+  $('rpList').style.display = 'none';
+  $('rpPw').value = '';
+  $('rpErr').textContent = '';
+};
+$('rpBack1').onclick = goHome;
+$('rpBack2').onclick = goHome;
+$('rpUnlock').onclick = () => {
+  if ($('rpPw').value === ADMIN_PW){
+    $('rpLock').style.display = 'none';
+    $('rpList').style.display = 'block';
+    renderRpList();
+  } else {
+    $('rpErr').textContent = 'Wrong password 密碼錯誤';
+  }
+};
+$('rpPw').addEventListener('keydown', e => { if (e.key === 'Enter') $('rpUnlock').onclick(); });
+
+function renderRpList(){
+  const ts = ticketsArr().sort((a,b) => b.no - a.no).slice(0, 60);
+  $('rpItems').innerHTML = ts.map(t =>
+    `<button class="rp-chip" data-k="${t.key}">${t.label}</button>`
+  ).join('') || '<p class="muted">No tickets 暫無籌號</p>';
+}
+$('rpItems').onclick = e => {
+  const k = e.target.dataset.k; if (!k) return;
+  const t = ticketsArr().find(x => x.key === k); if (!t) return;
+  $('printArea').innerHTML = ticketHTML(t, true);
+  setTimeout(() => window.print(), 300);
+};
 </script>
 </body></html>
