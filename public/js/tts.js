@@ -1,4 +1,4 @@
-/* 音檔優先 → Edge 神經 TTS（缺檔自動合併成句）→ 瀏覽器 TTS */
+/* 音檔優先 → Edge 神經 TTS（Sec-MS-GEC 驗證、女聲、48kHz）→ 瀏覽器 TTS 兜底 */
 const AUDIO_EXT = '.mp3';
 let currentAudio = null, currentResolve = null, announceToken = 0, edgeAbort = null;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -15,6 +15,7 @@ const TTS_WORDS = {
   yue:{ ticket:'籌號', goto:'請往', suffix:'號櫃位' },
   zh:{ ticket:'筹号', goto:'请到', suffix:'号柜台' }
 };
+/* 全部女聲、最新 neural */
 const EDGE_VOICES = { 'en-US':'en-US-AriaNeural', 'zh-HK':'zh-HK-HiuGaaiNeural', 'zh-CN':'zh-CN-XiaoxiaoNeural' };
 const CLIP_WORDS = {
   en:{ 'please go to counter':'en/counter', 'ticket':'en/Ticket' },
@@ -49,62 +50,82 @@ async function clipExists(path){
   return v;
 }
 
-/* ===== Edge 神經 TTS（48kHz 高碼率） ===== */
+/* ===== Microsoft Sec-MS-GEC token（BigInt 防精度流失） ===== */
+async function secMsGec(){
+  const t = Math.floor(Date.now() / 1000);
+  const rounded = t + 300 - (t % 300);
+  const ticks = (BigInt(rounded) + 11644473600n) * 10000000n;
+  const data = ticks.toString() + '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
+  const hash = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
+  return `${rounded}.${hash}`;
+}
+
+/* ===== Edge 神經 TTS ===== */
 function edgeFetch(text, langCode){
   return new Promise(res => {
     const uuid = (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : String(Date.now()) + Math.random().toString().slice(2));
-    let ws;
-    try{
-      ws = new WebSocket('wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4&ConnectionId=' + uuid);
-    }catch(e){ return res(null); }
-    const chunks = []; let done = false;
-    const finish = ok => {
-      if (done) return; done = true;
-      edgeAbort = null;
-      try{ ws.close(); }catch(e){}
-      if (!ok || !chunks.length) return res(null);
-      const blob = new Blob(chunks, { type:'audio/mp3' });
-      const f = new FileReader();
-      f.onload = () => res(f.result);
-      f.onerror = () => res(null);
-      f.readAsDataURL(blob);
-    };
-    edgeAbort = () => finish(false);
-    const now = () => new Date().toString();
-    ws.onopen = () => {
-      ws.send(`X-Timestamp:${now()}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"true"},"outputFormats":["audio-48khz-96kbitrate-mono-mp3"]}}}}\r\n`);
-      ws.send(`X-RequestId:${uuid}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${now()}\r\nPath:ssml\r\n\r\n<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${langCode}"><voice name="${EDGE_VOICES[langCode] || EDGE_VOICES['en-US']}"><prosody pitch="+0Hz" rate="+0%" volume="+0%">${escapeXml(text)}</prosody></voice></speak>`);
-    };
-    ws.onmessage = ev => {
-      if (typeof ev.data === 'string'){
-        if (ev.data.includes('turn.end')) finish(true);
-      } else {
-        const d = new Uint8Array(ev.data);
-        const hl = (d[0] << 8) | d[1];
-        chunks.push(d.slice(2 + hl));
-      }
-    };
-    ws.onerror = () => finish(false);
-    ws.onclose = () => finish(chunks.length > 0);
-    setTimeout(() => finish(chunks.length > 0), 8000);
+    secMsGec().then(token => {
+      let ws;
+      try{
+        ws = new WebSocket('wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4&ConnectionId=' + uuid + '&Sec-MS-GEC=' + token + '&Sec-MS-GEC-Version=1-131.0.2903.86');
+      }catch(e){ return res(null); }
+      const chunks = []; let done = false;
+      const finish = ok => {
+        if (done) return; done = true;
+        edgeAbort = null;
+        try{ ws.close(); }catch(e){}
+        if (!ok || !chunks.length) return res(null);
+        const blob = new Blob(chunks, { type:'audio/mp3' });
+        const f = new FileReader();
+        f.onload = () => res(f.result);
+        f.onerror = () => res(null);
+        f.readAsDataURL(blob);
+      };
+      edgeAbort = () => finish(false);
+      const now = () => new Date().toString();
+      ws.onopen = () => {
+        ws.send(`X-Timestamp:${now()}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"true"},"outputFormats":["audio-24khz-48kbitrate-mono-mp3"]}}}}\r\n`);
+        ws.send(`X-RequestId:${uuid}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${now()}\r\nPath:ssml\r\n\r\n<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${langCode}"><voice name="${EDGE_VOICES[langCode] || EDGE_VOICES['en-US']}"><prosody pitch="+0Hz" rate="+0%" volume="+0%">${escapeXml(text)}</prosody></voice></speak>`);
+      };
+      ws.onmessage = ev => {
+        if (typeof ev.data === 'string'){
+          if (ev.data.includes('turn.end')) finish(true);
+        } else {
+          const d = new Uint8Array(ev.data);
+          const hl = (d[0] << 8) | d[1];
+          chunks.push(d.slice(2 + hl));
+        }
+      };
+      ws.onerror = () => finish(false);
+      ws.onclose = () => finish(chunks.length > 0);
+      setTimeout(() => finish(chunks.length > 0), 8000);
+    }).catch(() => res(null));
   });
 }
 
-/* ===== 朗讀文字（快取 → Edge → 瀏覽器） ===== */
+/* ===== 朗讀文字（快取 → Edge → 瀏覽器女聲優先） ===== */
+const FEMALE_HINTS = {
+  'zh-HK':['HiuGaai','HiuMaan','female','女'],
+  'zh-CN':['Xiaoxiao','Xiaoyi','Yaoyi','female','女'],
+  'en-US':['Aria','Jenny','Michelle','Samantha','female']
+};
 function speakText(text, langCode){
   return new Promise(res => {
     const my = announceToken;
     if (!text || !text.trim()) return res();
-    const ck = 'edgeT_' + langCode + '_' + text;
+    const ck = 'edgeT3_' + langCode + '_' + text;
     const browserSpeak = () => {
       if (announceToken !== my) return res();
       if (!('speechSynthesis' in window)) return res();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = langCode; u.rate = 0.95; u.volume = 1;
       const vs = speechSynthesis.getVoices();
-      const want = langCode.toLowerCase().replace('-','_');
-      const v = vs.find(x => x.lang.toLowerCase().replace('-','_') === want)
-             || vs.find(x => x.lang.toLowerCase().startsWith(langCode.slice(0,2).toLowerCase()));
+      const hints = FEMALE_HINTS[langCode] || [];
+      let v = null;
+      for (const h of hints){ if (!v) v = vs.find(x => x.name.includes(h)); }
+      if (!v) v = vs.find(x => x.lang.toLowerCase().replace('-','_') === langCode.toLowerCase().replace('-','_'));
+      if (!v) v = vs.find(x => x.lang.toLowerCase().startsWith(langCode.slice(0,2).toLowerCase()));
       if (v) u.voice = v;
       u.onend = () => res(); u.onerror = () => res();
       speechSynthesis.speak(u);
@@ -121,7 +142,7 @@ function speakText(text, langCode){
     if (cached) return playSrc(cached);
     edgeFetch(text, langCode).then(data => {
       if (announceToken !== my) return res();
-      if (data){ console.log('[TTS] Edge neural:', text); try{ localStorage.setItem(ck, data); }catch(e){} playSrc(data); }
+      if (data){ console.log('[TTS] Edge neural 女聲:', langCode, text); try{ localStorage.setItem(ck, data); }catch(e){} playSrc(data); }
       else { console.warn('[TTS] Edge 失敗 → 瀏覽器 TTS:', text); browserSpeak(); }
     });
   });
