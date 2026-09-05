@@ -60,22 +60,7 @@
     </div>
     <label>Repeat 重複次數</label>
     <input id="ttsRepeat" type="number" min="1" max="5" value="1" style="max-width:100px">
-
-    <label>Broadcast phrase 廣播詞</label>
-    <div class="row">
-      <label style="margin:0; display:flex; align-items:center; gap:6px"><input type="radio" name="ttsMode" id="modeDefault" value="default" style="width:auto"> Default 預設</label>
-      <label style="margin:0; display:flex; align-items:center; gap:6px"><input type="radio" name="ttsMode" id="modeCustom" value="custom" style="width:auto"> Custom 自定義</label>
-    </div>
-    <div id="customBox" style="display:none; margin-top:8px">
-      <label>English</label>
-      <input id="tplEn" placeholder="Ticket {label}, please go to counter {counter}">
-      <label>粵語</label>
-      <input id="tplYue" placeholder="籌號 {label}，請往 {counter} 號櫃位">
-      <label>普通話</label>
-      <input id="tplZh" placeholder="筹号 {label}，请到 {counter} 号柜台">
-      <p class="muted" style="margin-top:6px">佔位符 Placeholders：{label} 籌號、{counter} 櫃位號碼、{name} 櫃位英文名、{nameZh} 櫃位中文名。文本中含有現有錄音嘅字詞（數字、字母、Ticket、請往、號櫃位、籌號／筹号等）會用原錄音播放，其餘文字自動用 Edge 神經 TTS 朗讀（混合播報）。Save 後再 Test 生效。</p>
-    </div>
-
+    <p class="muted" style="margin-top:6px">預設廣播詞：籌號＋號碼＋請往＋櫃位。音庫缺檔時自動用 TTS 補上。</p>
     <div class="row" style="margin-top:12px">
       <button id="btnTest" class="btn-amber">Test 試播</button>
     </div>
@@ -135,8 +120,6 @@ function counters(){ return (STATE && STATE.settings && STATE.settings.counters)
 
 setTimeout(() => { if (!STATE) toast('⚠️ 無法載入資料：檢查網絡／Rules。Cannot load data.', 8000); }, 3000);
 
-function syncModeBox(){ $('customBox').style.display = $('modeCustom').checked ? 'block' : 'none'; }
-
 onState(s => {
   $('sessChip').textContent = `Session 時段 ${s.session.prefix} · Next 下一籌 ${s.session.prefix}${String(s.session.next).padStart(3,'0')}`;
   renderCounters();
@@ -157,13 +140,6 @@ onState(s => {
     $('langYue').checked = t.languages.includes('yue');
     $('langZh').checked = t.languages.includes('zh');
     $('ttsRepeat').value = t.repeat || 1;
-    $('modeCustom').checked = t.mode === 'custom';
-    $('modeDefault').checked = t.mode !== 'custom';
-    const cu = t.custom || {};
-    $('tplEn').value = cu.en || 'Ticket {label}, please go to counter {counter}';
-    $('tplYue').value = cu.yue || '籌號 {label}，請往 {counter} 號櫃位';
-    $('tplZh').value = cu.zh || '筹号 {label}，请到 {counter} 号柜台';
-    syncModeBox();
     $('setTitle').value = s.settings.title;
     $('setSubtitle').value = s.settings.subtitle;
     $('setNote').value = s.settings.note;
@@ -173,8 +149,6 @@ onState(s => {
     $('prefixInput').placeholder = s.session.prefix;
   }
 });
-$('modeDefault').onchange = syncModeBox;
-$('modeCustom').onchange = syncModeBox;
 
 /* ===== 手動播報 ===== */
 $('btnManPlay').onclick = async () => {
@@ -254,22 +228,14 @@ $('btnAdvance').onclick = async () => {
   toast('Advanced 已進下一時段');
 };
 function getLangs(){ return ['en','yue','zh'].filter(l => ({en:$('langEn'), yue:$('langYue'), zh:$('langZh')})[l].checked); }
-function formTts(){
-  return {
-    languages: getLangs(),
-    repeat: +$('ttsRepeat').value || 1,
-    mode: $('modeCustom').checked ? 'custom' : 'default',
-    custom: { en: $('tplEn').value, yue: $('tplYue').value, zh: $('tplZh').value }
-  };
-}
 $('btnTest').onclick = () => {
   if (!guard()) return;
   const c = counters()[0] || { name:'Counter 1', nameZh:'一號櫃位' };
-  const cfg = formTts();
-  announce(cfg.languages, { repeat: cfg.repeat, phrases: {
-    en:  buildPhrase('en',  'A001', c, cfg),
-    yue: buildPhrase('yue', 'A001', c, cfg),
-    zh:  buildPhrase('zh',  'A001', c, cfg)
+  const langs = getLangs();
+  announce(langs, { repeat: +$('ttsRepeat').value || 1, phrases: {
+    en:  buildPhrase('en',  'A001', c),
+    yue: buildPhrase('yue', 'A001', c),
+    zh:  buildPhrase('zh',  'A001', c)
   }}, true);
 };
 $('btnSave').onclick = async () => {
@@ -282,7 +248,7 @@ $('btnSave').onclick = async () => {
     counters: counters(),
     avgMinutes: +$('avgMinutes').value || 3,
     paper: $('paper58').checked ? '58' : '80',
-    tts: formTts()
+    tts: { languages: getLangs(), repeat: +$('ttsRepeat').value || 1 }
   });
   toast('Saved 已儲存');
 };
