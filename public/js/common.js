@@ -141,3 +141,7 @@ async function clearTickets(){
     'session/next': 1
   });
 }
+/* 櫃位暫停/恢復服務 */
+async function pauseCounter(id){ await stateRef.child('counters/' + id + '/paused').set(true); }
+async function resumeCounter(id){ await stateRef.child('counters/' + id + '/paused').set(false); }
+function isCounterPaused(id){ return !!(STATE && STATE.counters && STATE.counters[id] && STATE.counters[id].paused); }
