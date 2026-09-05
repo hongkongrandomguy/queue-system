@@ -24,7 +24,6 @@
 .k-back{font-size:13px; color:var(--muted)}
 .rp-chip{background:#f1f5f9; color:var(--text); box-shadow:none; padding:10px 16px; font-size:16px; border-radius:10px}
 .rp-chip:hover{background:#e2e8f0}
-/* 重印預覽票面 */
 .rp-ticket{background:#fff; border:1.5px dashed #94a3b8; border-radius:12px; padding:16px;
   font-size:13px; line-height:1.7; color:#000; text-align:left}
 .rp-ticket .badge{display:inline-block; border:1px solid #000; padding:2px 8px; font-weight:700; margin-bottom:8px}
@@ -154,6 +153,14 @@ function ticketHTML(t, reprint){
     </div>`;
 }
 
+/* 按紙張設定打印 */
+function setPrint(t, reprint){
+  const pa = $('printArea');
+  pa.className = (STATE.settings.paper === '58') ? 'p58' : '';
+  pa.innerHTML = ticketHTML(t, reprint);
+  setTimeout(() => window.print(), 300);
+}
+
 /* ===== 取號 ===== */
 $('takeBtn').onclick = async () => {
   if (busy) return; busy = true;
@@ -166,8 +173,7 @@ $('takeBtn').onclick = async () => {
   $('homeView').style.display = 'none';
   $('ticketView').style.display = 'flex';
 
-  $('printArea').innerHTML = ticketHTML(t, false);
-  setTimeout(() => window.print(), 300);
+  setPrint(t, false);
 
   let sec = 10;
   $('backCount').textContent = `Tap anywhere to return 點擊任意位置返回 · ${sec}s`;
@@ -245,8 +251,7 @@ $('rpItems').onclick = e => {
 /* 確定先列印 */
 $('rpPrint').onclick = () => {
   if (!rpTicket) return;
-  $('printArea').innerHTML = ticketHTML(rpTicket, true);
-  setTimeout(() => window.print(), 300);
+  setPrint(rpTicket, true);
 };
 </script>
 </body></html>
