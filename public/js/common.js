@@ -34,6 +34,13 @@ function currentOf(id){
 function counterById(id){ return (STATE.settings.counters||[]).find(c=>String(c.id)===String(id))||{id:id,name:'Counter '+id,nameZh:'櫃位 '+id}; }
 function toast(m,ms=2500){ const t=document.getElementById('toast'); if(!t)return; t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),ms); }
 
+/* 原子遞增序号：保證並發叫號時 seq 唯一 */
+async function nextSeq(path){
+  let v;
+  await stateRef.child(path).transaction(c => { v = (c||0)+1; return v; });
+  return v;
+}
+
 async function takeTicket(){
   let no; const pre = STATE.session.prefix;
   await stateRef.child('session/next').transaction(c => { no = c||1; return no+1; });
@@ -44,43 +51,46 @@ async function takeTicket(){
 }
 async function callNext(id){
   const w = waiting()[0]; if (!w) return null;
+  const seq = await nextSeq('callSeq');
   await stateRef.update({
     ['tickets/'+w.key+'/status']: 'called',
     ['tickets/'+w.key+'/counter']: Number(id),
     ['tickets/'+w.key+'/calledAt']: Date.now(),
-    lastCall: { ticket:{label:w.label,no:w.no}, counter:Number(id), at:Date.now(), seq:(STATE.lastCall?.seq||0)+1 }
+    lastCall: { ticket:{label:w.label,no:w.no}, counter:Number(id), at:Date.now(), seq }
   });
   return w;
 }
 async function recall(id){
   const t = currentOf(id); if (!t) return;
+  const seq = await nextSeq('callSeq');
   await stateRef.update({
     ['tickets/'+t.key+'/calledAt']: Date.now(),
-    lastCall: { ticket:{label:t.label,no:t.no}, counter:Number(id), at:Date.now(), seq:(STATE.lastCall?.seq||0)+1 }
+    lastCall: { ticket:{label:t.label,no:t.no}, counter:Number(id), at:Date.now(), seq }
   });
 }
 async function callNumber(id, raw){
   const num = Number(String(raw).toUpperCase().replace(/^[A-Z]+/,''));
   const t = ticketsArr().find(t=>t.no===num && t.status!=='done'); if (!t) return null;
+  const seq = await nextSeq('callSeq');
   await stateRef.update({
     ['tickets/'+t.key+'/status']: 'called',
     ['tickets/'+t.key+'/counter']: Number(id),
     ['tickets/'+t.key+'/calledAt']: Date.now(),
-    lastCall: { ticket:{label:t.label,no:t.no}, counter:Number(id), at:Date.now(), seq:(STATE.lastCall?.seq||0)+1 }
+    lastCall: { ticket:{label:t.label,no:t.no}, counter:Number(id), at:Date.now(), seq }
   });
   return t;
 }
 async function completeTicket(key){ await stateRef.child('tickets/'+key+'/status').set('done'); }
 async function complete(id){ const t = currentOf(id); if (t) await completeTicket(t.key); }
 
-/* 撤回：只限自己櫃位；籌號返回等候隊列，並通知大屏幕停止／取消廣播 */
 async function undoCall(id){
   const t = currentOf(id); if (!t) return null;
+  const seq = await nextSeq('undoSeq');
   await stateRef.update({
     ['tickets/'+t.key+'/status']: 'waiting',
     ['tickets/'+t.key+'/counter']: null,
     ['tickets/'+t.key+'/calledAt']: null,
-    lastUndo: { label: t.label, counter: Number(id), at: Date.now(), seq: ((STATE.lastUndo && STATE.lastUndo.seq) || 0) + 1 }
+    lastUndo: { label: t.label, counter: Number(id), at: Date.now(), seq }
   });
   return t;
 }
