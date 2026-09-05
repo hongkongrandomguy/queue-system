@@ -72,6 +72,19 @@ async function callNumber(id, raw){
 }
 async function completeTicket(key){ await stateRef.child('tickets/'+key+'/status').set('done'); }
 async function complete(id){ const t = currentOf(id); if (t) await completeTicket(t.key); }
+
+/* 撤回：只限自己櫃位；籌號返回等候隊列，並通知大屏幕停止／取消廣播 */
+async function undoCall(id){
+  const t = currentOf(id); if (!t) return null;
+  await stateRef.update({
+    ['tickets/'+t.key+'/status']: 'waiting',
+    ['tickets/'+t.key+'/counter']: null,
+    ['tickets/'+t.key+'/calledAt']: null,
+    lastUndo: { label: t.label, counter: Number(id), at: Date.now(), seq: ((STATE.lastUndo && STATE.lastUndo.seq) || 0) + 1 }
+  });
+  return t;
+}
+
 async function setPrefix(p){
   const ups = {};
   ticketsArr().forEach(t => { if (t.status==='waiting') ups['tickets/'+t.key+'/status'] = 'expired'; });
