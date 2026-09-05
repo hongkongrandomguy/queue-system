@@ -14,6 +14,7 @@
     <button id="btnComplete" class="btn-green">COMPLETE<br><span class="hk">完成</span></button>
     <button id="btnUndo" class="btn-gray">UNDO<br><span class="hk">撤回上一步</span></button>
     <button id="btnStop" style="background:linear-gradient(135deg,#ef4444,#b91c1c); box-shadow:0 4px 14px rgba(239,68,68,.35)">STOP<br><span class="hk">停止播報</span></button>
+    <button id="btnPause" class="btn-gray">PAUSE<br><span class="hk">暫停服務</span></button>
     <button id="btnCallNum" class="btn-gray">CALL NUMBER<br><span class="hk">指定號碼</span></button>
   </div>
   <div class="card" id="keypadCard" style="display:none">
@@ -50,6 +51,19 @@ onState(s => {
     w.map(t => `<span>${t.label}</span>`).join('') +
     called.map(t => `<span class="called-chip${String(t.counter)===String(cid)?' cur':''}">${t.label}</span>`).join('')
     || '<span class="muted">No one 暫無</span>';
+
+  /* 暫停按鈕狀態更新 */
+  const paused = isCounterPaused(cid);
+  const btnP = $('btnPause');
+  if (paused) {
+    btnP.innerHTML = 'RESUME<br><span class="hk">恢復服務</span>';
+    btnP.style.background = 'linear-gradient(135deg,#10b981,#047857)';
+    btnP.style.boxShadow = '0 4px 14px rgba(16,185,129,.35)';
+  } else {
+    btnP.innerHTML = 'PAUSE<br><span class="hk">暫停服務</span>';
+    btnP.style.background = '';
+    btnP.className = 'btn-gray';
+  }
 });
 
 $('btnNext').onclick = async () => { const t = await callNext(cid); toast(t ? 'Called 已叫 ' + t.label : 'No waiting 無人等候'); };
@@ -59,8 +73,18 @@ $('btnUndo').onclick = async () => {
   const t = await undoCall(cid);
   toast(t ? 'Undone 已撤回 ' + t.label + '（返回等候）' : 'Nothing to undo 無可撤回');
 };
-/* 停止播報：只限自己櫃位 */
 $('btnStop').onclick = async () => { await stopCall(cid); toast('Stopped 已停止本櫃位廣播'); };
+
+/* 暫停/恢復服務 */
+$('btnPause').onclick = async () => {
+  if (isCounterPaused(cid)) {
+    await resumeCounter(cid);
+    toast('Resumed 已恢復服務');
+  } else {
+    await pauseCounter(cid);
+    toast('Paused 已暫停服務');
+  }
+};
 
 $('btnCallNum').onclick = () => { $('keypadCard').style.display = $('keypadCard').style.display === 'none' ? 'block' : 'none'; };
 $('btnCloseKeypad').onclick = () => { $('keypadCard').style.display = 'none'; };
