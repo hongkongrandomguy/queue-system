@@ -34,7 +34,7 @@ onState(s => {
   const lc = s.lastCall;
   if (lc){
     const c = counterById(lc.counter);
-    document.getElementById('ticker').textContent = `Now Calling 請到 ${lc.ticket.label} → ${c.name}`;
+    document.getElementById('ticker').textContent = `Now Calling ${lc.ticket.label} → ${c.name} · 請到 ${lc.ticket.label} → ${c.nameZh}`;
   }
 
   /* 撤回信號 */
@@ -83,17 +83,17 @@ function renderGrid(s){
   const ids = (s.settings.counters||[]).map(c => c.id);
   Object.keys(byCounter).forEach(id => { if (!ids.includes(Number(id))) ids.push(Number(id)); });
   const now = Date.now();
-  
+
   document.getElementById('callGrid').innerHTML = ids.map(id => {
-    const t = byCounter[id]; 
+    const t = byCounter[id];
     const c = counterById(id);
     const active = flashId != null && Number(id) === Number(flashId) && now < flashUntil;
     const num = String(c.name || '').replace(/\D/g,'') || String(id);
-    
+
     /* 暫停服務判斷 */
     const paused = s.counters && s.counters[id] && s.counters[id].paused;
-    const numHtml = paused 
-      ? '<span style="color:#f87171; font-size:32px; line-height:1.1">暫停服務<br><span style="font-size:20px; letter-spacing:1px">Suspended</span></span>' 
+    const numHtml = paused
+      ? '<span class="paused-txt">暫停服務<small>Suspended</small></span>'
       : (t ? t.label : '—');
 
     return `<div class="call-item${active ? ' active' : ''}">
