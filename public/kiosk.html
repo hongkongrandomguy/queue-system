@@ -24,6 +24,13 @@
 .k-back{font-size:13px; color:var(--muted)}
 .rp-chip{background:#f1f5f9; color:var(--text); box-shadow:none; padding:10px 16px; font-size:16px; border-radius:10px}
 .rp-chip:hover{background:#e2e8f0}
+/* 重印預覽票面 */
+.rp-ticket{background:#fff; border:1.5px dashed #94a3b8; border-radius:12px; padding:16px;
+  font-size:13px; line-height:1.7; color:#000; text-align:left}
+.rp-ticket .badge{display:inline-block; border:1px solid #000; padding:2px 8px; font-weight:700; margin-bottom:8px}
+.rp-ticket .num{font-size:48px; font-weight:800; text-align:center; margin:6px 0; letter-spacing:2px}
+.rp-ticket .center{text-align:center}
+.rp-ticket .b{font-weight:700}
 @media (max-width:640px){
   #takeBtn{height:min(300px,44vh); border-radius:26px}
   .k-ticket-card{padding:18px 28px}
@@ -78,6 +85,13 @@
     <div id="rpItems" style="display:flex; flex-wrap:wrap; gap:8px"></div>
     <div class="row" style="margin-top:14px"><button id="rpBack2" class="btn-gray">Back 返回</button></div>
   </div>
+  <div class="card" id="rpPreview" style="display:none; max-width:420px; width:100%">
+    <div id="rpPrevBody"></div>
+    <div class="row" style="margin-top:14px; justify-content:center">
+      <button id="rpPrint" class="btn-green">Print 確定列印</button>
+      <button id="rpBack3" class="btn-gray">Back 返回</button>
+    </div>
+  </div>
 </div>
 
 <div id="printArea"></div>
@@ -86,8 +100,8 @@
 <script src="js/config.js"></script><script src="js/common.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const ADMIN_PW = 'ktmc2026';   // ← 與 admin 相同密碼，改密碼時兩邊一齊改
-let busy = false, backTimer = null, takenNo = null, shownAt = 0;
+const ADMIN_PW = 'ktmc2026';   // ← 與 admin 相同密碼
+let busy = false, backTimer = null, takenNo = null, shownAt = 0, rpTicket = null;
 
 /* 點擊／觸碰任何位置 → 返回首頁（只限取號票畫面） */
 document.addEventListener('pointerdown', () => {
@@ -113,7 +127,7 @@ onState(s => {
   }
 });
 
-/* ===== 小票模板（reprint=true 加重新列印標記＋重印時間） ===== */
+/* ===== 小票模板 ===== */
 function ticketHTML(t, reprint){
   return `
     ${reprint ? '<div class="t-reprint">Reprinted 重新列印</div>' : ''}
@@ -180,11 +194,16 @@ $('btnReprint').onclick = () => {
   $('reprintView').style.display = 'flex';
   $('rpLock').style.display = 'block';
   $('rpList').style.display = 'none';
+  $('rpPreview').style.display = 'none';
   $('rpPw').value = '';
   $('rpErr').textContent = '';
 };
 $('rpBack1').onclick = goHome;
 $('rpBack2').onclick = goHome;
+$('rpBack3').onclick = () => {
+  $('rpPreview').style.display = 'none';
+  $('rpList').style.display = 'block';
+};
 $('rpUnlock').onclick = () => {
   if ($('rpPw').value === ADMIN_PW){
     $('rpLock').style.display = 'none';
@@ -202,10 +221,31 @@ function renderRpList(){
     `<button class="rp-chip" data-k="${t.key}">${t.label}</button>`
   ).join('') || '<p class="muted">No tickets 暫無籌號</p>';
 }
+
+/* 揀號碼 → 預覽 */
 $('rpItems').onclick = e => {
   const k = e.target.dataset.k; if (!k) return;
   const t = ticketsArr().find(x => x.key === k); if (!t) return;
-  $('printArea').innerHTML = ticketHTML(t, true);
+  rpTicket = t;
+  $('rpPrevBody').innerHTML = `
+    <div class="rp-ticket">
+      <div class="badge">Reprinted 重新列印</div>
+      <div class="center b">觀塘瑪利諾書院</div>
+      <div class="center" style="font-size:11px">KWUN TONG MARYKNOLL COLLEGE</div>
+      <div class="center" style="margin-top:6px">號碼票 QUEUE TICKET</div>
+      <div class="num">${t.label}</div>
+      <div>發行時間 Issuing Time: ${t.time}</div>
+      <div>重印時間 Reprint Time: ${nowLabel()}</div>
+      <div>時段 Session: ${STATE.session.prefix}</div>
+    </div>`;
+  $('rpList').style.display = 'none';
+  $('rpPreview').style.display = 'block';
+};
+
+/* 確定先列印 */
+$('rpPrint').onclick = () => {
+  if (!rpTicket) return;
+  $('printArea').innerHTML = ticketHTML(rpTicket, true);
   setTimeout(() => window.print(), 300);
 };
 </script>
