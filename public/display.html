@@ -21,6 +21,10 @@
 <script src="js/config.js"></script><script src="js/common.js"></script><script src="js/tts.js"></script>
 <script>
 let lastSeq = 0;
+let pending = [];        // 廣播隊列：多個櫃位同時叫號 → 排隊逐個播，唔會疊聲
+let announcing = false;
+let flashId = null, flashUntil = 0;
+
 onState(s => {
   document.getElementById('footerTitle').innerHTML = `${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
 
@@ -28,46 +32,63 @@ onState(s => {
   const w = waiting();
   document.getElementById('queueItems').innerHTML = w.map(t=>`<span>${t.label}</span>`).join('') || '<span class="muted">No one waiting 暫無等候</span>';
 
-  /* 已叫號區：每櫃位一格，未完成持續顯示，新叫號唔會覆蓋其他櫃位 */
+  renderGrid(s);
+
+  /* 底部跑馬燈（顯示最新叫號） */
+  const lc = s.lastCall;
+  if (lc){
+    const c = counterById(lc.counter);
+    document.getElementById('ticker').textContent = `Now Calling 請到 ${lc.ticket.label} → ${c.name}`;
+  }
+
+  /* 新叫號 → 入隊，由處理器逐個播 */
+  if (lc && lc.seq !== lastSeq){
+    lastSeq = lc.seq;
+    pending.push(lc);
+    processQueue();
+  }
+});
+
+/* 已叫號格仔渲染 */
+function renderGrid(s){
   const byCounter = {};
   ticketsArr().forEach(t => {
     if (t.status !== 'called') return;
     const cur = byCounter[t.counter];
-    if (!cur || (t.calledAt||0) >= (cur.calledAt||0)) byCounter[t.counter] = t;   // 每櫃位顯示最新叫號
+    if (!cur || (t.calledAt||0) >= (cur.calledAt||0)) byCounter[t.counter] = t;
   });
   const ids = (s.settings.counters||[]).map(c => c.id);
   Object.keys(byCounter).forEach(id => { if (!ids.includes(Number(id))) ids.push(Number(id)); });
-
-  const lc = s.lastCall;
-  const fresh = lc && (Date.now() - lc.at < 8000);   // 8 秒內視為「剛叫」→ 閃爍
+  const now = Date.now();
   document.getElementById('callGrid').innerHTML = ids.map(id => {
     const t = byCounter[id]; const c = counterById(id);
-    const active = fresh && Number(lc.counter) === Number(id);
+    const active = flashId != null && Number(id) === Number(flashId) && now < flashUntil;
     return `<div class="call-item${active ? ' active' : ''}">
       <div class="ci-name">${c.name} <span class="hk">${c.nameZh}</span></div>
       <div class="ci-num">${t ? t.label : '—'}</div>
     </div>`;
   }).join('') || '<div class="call-item"><div class="ci-name muted">No counters 暫無櫃位</div><div class="ci-num">—</div></div>';
+}
 
-  /* 底部跑馬燈 */
-  if (lc){
+/* 廣播隊列處理器：一次只播一段，播完先播下一段 */
+async function processQueue(){
+  if (announcing) return;
+  announcing = true;
+  while (pending.length){
+    const lc = pending.shift();
     const c = counterById(lc.counter);
-    document.getElementById('ticker').textContent = `Now Calling 請到 ${lc.ticket.label} → ${c.name}`;
-  } else {
-    document.getElementById('ticker').textContent = '';
-  }
-
-  /* 新叫號 → 閃爍＋三語音檔廣播 */
-  if (lc && lc.seq !== lastSeq){
-    lastSeq = lc.seq;
-    const c = counterById(lc.counter);
-    announce(s.settings.tts.languages, { ...s.settings.tts, phrases: {
+    flashId = lc.counter; flashUntil = Date.now() + 8000;   // 閃爍跟住而家播緊嘅叫號
+    renderGrid(STATE);
+    setTimeout(() => renderGrid(STATE), 8100);              // 到時自動熄閃爍
+    await announce(STATE.settings.tts.languages, { ...STATE.settings.tts, phrases: {
       en:  buildPhrase('en',  lc.ticket.label, c),
       yue: buildPhrase('yue', lc.ticket.label, c),
       zh:  buildPhrase('zh',  lc.ticket.label, c)
-    }}, true);
+    }}, false);   // false = 唔打斷，順序播
   }
-});
+  announcing = false;
+}
+
 document.getElementById('startTts').onclick = () => {
   chime();   // 解鎖瀏覽器音訊
   document.getElementById('startTts').style.display = 'none';
@@ -82,13 +103,13 @@ function autoScroll(el, step, interval, holdMs){
     if (el.scrollHeight <= el.clientHeight + 4){ if (el.scrollTop) el.scrollTop = 0; return; }
     if (holding) return;
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2){
-      holding = true;                       // 到底，停 2 秒
+      holding = true;
       setTimeout(() => {
-        el.scrollTo({ top:0, behavior:'smooth' });   // 平滑返頂
+        el.scrollTo({ top:0, behavior:'smooth' });
         setTimeout(() => { holding = false; }, 900);
       }, holdMs);
     } else {
-      el.scrollTop += step;                 // 緩慢向下滾
+      el.scrollTop += step;
     }
   }, interval);
 }
