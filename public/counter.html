@@ -13,6 +13,7 @@
     <button id="btnRecall" class="btn-amber">RECALL<br><span class="hk">重新呼叫</span></button>
     <button id="btnComplete" class="btn-green">COMPLETE<br><span class="hk">完成</span></button>
     <button id="btnUndo" class="btn-gray">UNDO<br><span class="hk">撤回上一步</span></button>
+    <button id="btnStop" style="background:linear-gradient(135deg,#ef4444,#b91c1c); box-shadow:0 4px 14px rgba(239,68,68,.35)">STOP<br><span class="hk">停止播報</span></button>
     <button id="btnCallNum" class="btn-gray">CALL NUMBER<br><span class="hk">指定號碼</span></button>
   </div>
   <div class="card" id="keypadCard" style="display:none">
@@ -54,12 +55,12 @@ onState(s => {
 $('btnNext').onclick = async () => { const t = await callNext(cid); toast(t ? 'Called 已叫 ' + t.label : 'No waiting 無人等候'); };
 $('btnRecall').onclick = async () => { const t = currentOf(cid); if (!t) return toast('Nothing to recall 無可重呼'); await recall(cid); toast('Recalled 已重呼 ' + t.label); };
 $('btnComplete').onclick = async () => { const t = currentOf(cid); if (!t) return toast('No active ticket 無服務中籌號'); await completeTicket(t.key); toast('Completed 已完成 ' + t.label); };
-
-/* 撤回：只限自己櫃位 */
 $('btnUndo').onclick = async () => {
   const t = await undoCall(cid);
   toast(t ? 'Undone 已撤回 ' + t.label + '（返回等候）' : 'Nothing to undo 無可撤回');
 };
+/* 停止播報：只限自己櫃位 */
+$('btnStop').onclick = async () => { await stopCall(cid); toast('Stopped 已停止本櫃位廣播'); };
 
 $('btnCallNum').onclick = () => { $('keypadCard').style.display = $('keypadCard').style.display === 'none' ? 'block' : 'none'; };
 $('btnCloseKeypad').onclick = () => { $('keypadCard').style.display = 'none'; };
