@@ -15,7 +15,6 @@
   font-weight:700; box-shadow:var(--shadow); font-size:18px}
 .k-stat small{display:block; font-weight:600; color:var(--muted); font-size:12px; margin-bottom:2px}
 .k-note{max-width:640px; color:var(--muted); line-height:1.7; font-size:14px}
-/* 取號後：票卡預覽 */
 .k-ticket-card{background:#fff; border:2px dashed #94a3b8; border-radius:20px; padding:26px 52px;
   box-shadow:var(--shadow)}
 .k-ticket-card .t-label{font-size:13px; font-weight:700; color:var(--muted); letter-spacing:3px}
@@ -66,7 +65,12 @@
 <script src="js/config.js"></script><script src="js/common.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-let busy = false, backTimer = null, takenNo = null;
+let busy = false, backTimer = null, takenNo = null, shownAt = 0;
+
+/* 點擊／觸碰任何位置 → 返回首頁（取號後 1.5 秒先生效，防誤觸） */
+document.addEventListener('pointerdown', () => {
+  if (takenNo != null && Date.now() - shownAt > 1500) goHome();
+});
 
 onState(s => {
   $('title').innerHTML = `${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
@@ -78,9 +82,8 @@ onState(s => {
   const w = waiting();
   const counters = (s.settings.counters || []).length || 1;
   const avg = s.settings.avgMinutes || 3;
-  const est = Math.ceil(w.length * avg / counters);
   $('statWait').textContent = w.length;
-  $('statEst').textContent = est + ' min';
+  $('statEst').textContent = Math.ceil(w.length * avg / counters) + ' min';
   if (takenNo != null){
     const ahead = w.filter(t => t.no < takenNo).length;
     $('tvAhead').textContent = ahead;
@@ -92,8 +95,8 @@ $('takeBtn').onclick = async () => {
   if (busy) return; busy = true;
   const t = await takeTicket();
   takenNo = t.no;
+  shownAt = Date.now();
 
-  /* 螢幕票卡 */
   $('tvNum').textContent = t.label;
   $('tvMeta').textContent = `Session ${STATE.session.prefix} · ${t.time}`;
   $('homeView').style.display = 'none';
@@ -123,13 +126,13 @@ $('takeBtn').onclick = async () => {
     </div>`;
   setTimeout(() => window.print(), 300);
 
-  /* 20 秒自動返回首頁 */
-  let sec = 20;
-  $('backCount').textContent = `Auto return 自動返回：${sec}s`;
+  /* 10 秒自動返回＋點擊任意位置返回 */
+  let sec = 10;
+  $('backCount').textContent = `Tap anywhere to return 點擊任意位置返回 · ${sec}s`;
   clearInterval(backTimer);
   backTimer = setInterval(() => {
     sec--;
-    $('backCount').textContent = `Auto return 自動返回：${sec}s`;
+    $('backCount').textContent = `Tap anywhere to return 點擊任意位置返回 · ${sec}s`;
     if (sec <= 0) goHome();
   }, 1000);
   busy = false;
