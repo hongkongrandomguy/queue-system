@@ -37,7 +37,7 @@ onState(s => {
     document.getElementById('ticker').textContent = `Now Calling 請到 ${lc.ticket.label} → ${c.name}`;
   }
 
-  /* 撤回信號：未播嘅取消、正播嘅即時停 */
+  /* 撤回信號 */
   const lu = s.lastUndo;
   if (lu && lu.seq !== lastUndoSeq){
     lastUndoSeq = lu.seq;
@@ -51,16 +51,17 @@ onState(s => {
     }
   }
 
-    /* 停止信號：只停該櫃位嘅廣播 */
+  /* 停止信號（'*' = 全部停止） */
   const ls = s.lastStop;
   if (ls && ls.seq !== lastStopSeq){
     lastStopSeq = ls.seq;
-    pending = pending.filter(x => Number(x.counter) !== Number(ls.counter));   // 未播嘅移除
-    if (annCounter != null && Number(annCounter) === Number(ls.counter)){
-      stopAudio();                                                              // 正播嘅即時停
+    const all = ls.counter === '*';
+    pending = all ? [] : pending.filter(x => Number(x.counter) !== Number(ls.counter));
+    if (all || (annCounter != null && Number(annCounter) === Number(ls.counter))){
+      stopAudio();
       annLabel = null;
     }
-    if (flashId != null && Number(flashId) === Number(ls.counter)){
+    if (all || (flashId != null && Number(flashId) === Number(ls.counter))){
       flashId = null; flashUntil = 0; renderGrid(STATE);
     }
   }
@@ -105,6 +106,7 @@ async function processQueue(){
     renderGrid(STATE);
     setTimeout(() => renderGrid(STATE), 8100);
     annLabel = lc.ticket.label; annCounter = lc.counter;
+    stateRef.child('nowPlaying').set({ label: lc.ticket.label, counter: lc.counter, at: Date.now() });
     await announce(STATE.settings.tts.languages, { ...STATE.settings.tts, phrases: {
       en:  buildPhrase('en',  lc.ticket.label, c),
       yue: buildPhrase('yue', lc.ticket.label, c),
@@ -113,6 +115,7 @@ async function processQueue(){
     annLabel = null;
   }
   announcing = false;
+  stateRef.child('nowPlaying').set(null);
 }
 
 document.getElementById('startTts').onclick = () => {
