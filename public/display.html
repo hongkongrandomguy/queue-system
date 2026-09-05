@@ -34,7 +34,7 @@ onState(s => {
   const lc = s.lastCall;
   if (lc){
     const c = counterById(lc.counter);
-    document.getElementById('ticker').textContent = `Now Calling ${lc.ticket.label} → ${c.name} · 請到 ${lc.ticket.label} → ${c.nameZh}`;
+    document.getElementById('ticker').textContent = `Now Calling ${lc.ticket.label} → ${c.name} · 請 ${lc.ticket.label} 到${c.nameZh}`;
   }
 
   /* 撤回信號 */
