@@ -68,12 +68,12 @@
     </div>
     <div id="customBox" style="display:none; margin-top:8px">
       <label>English</label>
-      <input id="tplEn" placeholder="Ticket number {label}, please go to counter {counter}">
+      <input id="tplEn" placeholder="Ticket {label}, please go to counter {counter}">
       <label>粵語</label>
       <input id="tplYue" placeholder="籌號 {label}，請到 {counter} 號櫃位">
       <label>普通話</label>
-      <input id="tplZh" placeholder="号码 {label}，请到 {counter} 号柜台">
-      <p class="muted" style="margin-top:6px">佔位符 Placeholders：{label} 籌號、{counter} 櫃位號碼、{name} 櫃位英文名、{nameZh} 櫃位中文名。文本中含有現有錄音嘅字詞（數字、字母、請到、號櫃位、籌號等）會用原錄音播放，其餘文字自動用 Edge TTS 朗讀（混合播報）。Save 後再 Test 生效。</p>
+      <input id="tplZh" placeholder="筹号 {label}，请到 {counter} 号柜台">
+      <p class="muted" style="margin-top:6px">佔位符 Placeholders：{label} 籌號、{counter} 櫃位號碼、{name} 櫃位英文名、{nameZh} 櫃位中文名。文本中含有現有錄音嘅字詞（數字、字母、Ticket、請到、號櫃位、籌號／筹号等）會用原錄音播放，其餘文字自動用 Edge TTS 朗讀（混合播報）。Save 後再 Test 生效。</p>
     </div>
 
     <div class="row" style="margin-top:12px">
@@ -151,9 +151,9 @@ onState(s => {
     $('modeCustom').checked = t.mode === 'custom';
     $('modeDefault').checked = t.mode !== 'custom';
     const cu = t.custom || {};
-    $('tplEn').value = cu.en || 'Ticket number {label}, please go to counter {counter}';
+    $('tplEn').value = cu.en || 'Ticket {label}, please go to counter {counter}';
     $('tplYue').value = cu.yue || '籌號 {label}，請到 {counter} 號櫃位';
-    $('tplZh').value = cu.zh || '号码 {label}，请到 {counter} 号柜台';
+    $('tplZh').value = cu.zh || '筹号 {label}，请到 {counter} 号柜台';
     syncModeBox();
     $('setTitle').value = s.settings.title;
     $('setSubtitle').value = s.settings.subtitle;
