@@ -170,16 +170,17 @@ input:focus,select:focus{outline:none; border-color:var(--accent2); box-shadow:0
   #printArea .t-row{font-size:12px; margin:1mm 0}
   #printArea .t-note{font-size:13px; margin-top:4mm; padding-top:2.5mm;
     border-top:0.3mm dashed #666; line-height:1.8; text-align:left}
-  /* ===== 58mm 紙：內容縮小＋靠左 ===== */
-  #printArea.p58{ width:48mm; }
+  /* ===== 58mm 票面：紙張保持 80mm、右側 22mm 留空、內容靠左、清晰唔拉長 ===== */
+  #printArea.p58{ width:58mm; margin:0; }
   #printArea.p58 .t-center{ text-align:left; }
-  #printArea.p58 .t-head img{ width:10mm; height:10mm; }
-  #printArea.p58 .t-school-zh{ font-size:16px; letter-spacing:0.5px; }
-  #printArea.p58 .t-school-en{ font-size:8px; letter-spacing:0.3px; }
-  #printArea.p58 .t-title{ font-size:15px; letter-spacing:3px; }
-  #printArea.p58 .t-title-en{ font-size:9px; letter-spacing:2px; }
-  #printArea.p58 .t-num{ font-size:40px; letter-spacing:1px; }
-  #printArea.p58 .t-row{ font-size:10px; }
-  #printArea.p58 .t-note{ font-size:10px; }
-  #printArea.p58 .t-reprint{ font-size:11px; padding:0.8mm 2mm; }
+  #printArea.p58 .t-head{ gap:2mm; padding-bottom:2mm; margin-bottom:2mm; }
+  #printArea.p58 .t-head img{ width:11mm; height:11mm; }
+  #printArea.p58 .t-school-zh{ font-size:18px; letter-spacing:0.5px; }
+  #printArea.p58 .t-school-en{ font-size:9px; letter-spacing:0.3px; }
+  #printArea.p58 .t-title{ font-size:16px; letter-spacing:3px; margin-top:0.5mm; }
+  #printArea.p58 .t-title-en{ font-size:10px; letter-spacing:2px; }
+  #printArea.p58 .t-num{ font-size:48px; letter-spacing:1px; margin:2mm 0; }
+  #printArea.p58 .t-row{ font-size:11px; margin:0.8mm 0; }
+  #printArea.p58 .t-note{ font-size:11px; margin-top:3mm; padding-top:2mm; line-height:1.6; }
+  #printArea.p58 .t-reprint{ font-size:12px; padding:0.8mm 2mm; margin-bottom:1.5mm; }
 }
