@@ -1,10 +1,10 @@
-/* 音檔優先 → Edge 神經 TTS（雙 token 重試）→ 瀏覽器 neural 女聲兜底 */
+/* 音檔優先 → Google TTS → Chrome 語音兜底 */
 const AUDIO_EXT = '.mp3';
-let currentAudio = null, currentResolve = null, announceToken = 0, edgeAbort = null;
+let currentAudio = null, currentResolve = null, announceToken = 0;
 const wait = ms => new Promise(r => setTimeout(r, ms));
-const escapeXml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 const TTS_LANG = { en:'en-US', yue:'zh-HK', zh:'zh-CN' };
+const G_TL = { en:'en', yue:'zh-HK', zh:'zh-CN' };
 const TTS_DIG = {
   en:['zero','one','two','three','four','five','six','seven','eight','nine'],
   yue:['零','一','二','三','四','五','六','七','八','九'],
@@ -15,7 +15,6 @@ const TTS_WORDS = {
   yue:{ ticket:'籌號', goto:'請往', suffix:'號櫃位' },
   zh:{ ticket:'筹号', goto:'请到', suffix:'号柜台' }
 };
-const EDGE_VOICES = { 'en-US':'en-US-AriaNeural', 'zh-HK':'zh-HK-HiuGaaiNeural', 'zh-CN':'zh-CN-XiaoxiaoNeural' };
 const CLIP_WORDS = {
   en:{ 'please go to counter':'en/counter', 'ticket':'en/Ticket' },
   yue:{ '請往':'yue/goto', '號櫃位':'yue/suffix', '籌號':'yue/ticket' },
@@ -49,105 +48,56 @@ async function clipExists(path){
   return v;
 }
 
-/* ===== Sec-MS-GEC token（兩種算法變體） ===== */
-async function secMsGec(variant){
-  const t = Math.floor(Date.now() / 1000);
-  const rounded = t + 300 - (t % 300);
-  const pre = variant === 0
-    ? ((BigInt(rounded) + 11644473600n) * 10000000n).toString()
-    : String(rounded);
-  const data = pre + '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
-  const hash = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
-  return `${rounded}.${hash}`;
-}
-
-/* ===== Edge 神經 TTS（單次嘗試） ===== */
-function edgeFetchOnce(text, langCode, token){
-  return new Promise(res => {
-    const uuid = (crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : String(Date.now()) + Math.random().toString().slice(2));
-    let ws;
-    try{
-      ws = new WebSocket('wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4&ConnectionId=' + uuid + '&Sec-MS-GEC=' + token + '&Sec-MS-GEC-Version=1-131.0.2903.86');
-    }catch(e){ return res(null); }
-    const chunks = []; let done = false;
-    const finish = ok => {
-      if (done) return; done = true;
-      edgeAbort = null;
-      try{ ws.close(); }catch(e){}
-      if (!ok || !chunks.length) return res(null);
-      const blob = new Blob(chunks, { type:'audio/mp3' });
-      const f = new FileReader();
-      f.onload = () => res(f.result);
-      f.onerror = () => res(null);
-      f.readAsDataURL(blob);
-    };
-    edgeAbort = () => finish(false);
-    const now = () => new Date().toString();
-    ws.onopen = () => {
-      ws.send(`X-Timestamp:${now()}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"true"},"outputFormats":["audio-24khz-48kbitrate-mono-mp3"]}}}}\r\n`);
-      ws.send(`X-RequestId:${uuid}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${now()}\r\nPath:ssml\r\n\r\n<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${langCode}"><voice name="${EDGE_VOICES[langCode] || EDGE_VOICES['en-US']}"><prosody pitch="+0Hz" rate="+0%" volume="+0%">${escapeXml(text)}</prosody></voice></speak>`);
-    };
-    ws.onmessage = ev => {
-      if (typeof ev.data === 'string'){
-        if (ev.data.includes('turn.end')) finish(true);
-      } else {
-        const d = new Uint8Array(ev.data);
-        const hl = (d[0] << 8) | d[1];
-        chunks.push(d.slice(2 + hl));
-      }
-    };
-    ws.onerror = () => { console.warn('[TTS] Edge WS 連線失敗'); finish(false); };
-    ws.onclose = () => finish(chunks.length > 0);
-    setTimeout(() => finish(chunks.length > 0), 8000);
-  });
-}
-async function edgeFetch(text, langCode){
-  const a = await edgeFetchOnce(text, langCode, await secMsGec(0));
-  if (a) return a;
-  return await edgeFetchOnce(text, langCode, await secMsGec(1));
-}
-
-/* ===== 朗讀文字（快取 → Edge → 瀏覽器 neural 女聲） ===== */
-const VOICE_PREF = ['HiuGaai','HiuMaan','Xiaoxiao','Xiaoyi','Aria','Jenny','Online (Natural)','Neural','Natural'];
-function speakText(text, langCode){
+/* ===== Google Translate TTS（audio 直播，免 CORS） ===== */
+function googleSpeak(text, langKey){
   return new Promise(res => {
     const my = announceToken;
-    if (!text || !text.trim()) return res();
-    const ck = 'edgeT4_' + langCode + '_' + text;
-    const browserSpeak = () => {
-      if (announceToken !== my) return res();
-      if (!('speechSynthesis' in window)) return res();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = langCode; u.rate = 0.95; u.volume = 1;
-      const vs = speechSynthesis.getVoices();
-      const lang2 = langCode.slice(0,2).toLowerCase();
-      let v = null;
-      for (const p of VOICE_PREF){ if (!v) v = vs.find(x => x.name.includes(p) && x.lang.toLowerCase().startsWith(lang2)); }
-      for (const p of VOICE_PREF){ if (!v) v = vs.find(x => x.name.includes(p)); }
-      if (!v) v = vs.find(x => x.lang.toLowerCase().replace('-','_') === langCode.toLowerCase().replace('-','_'));
-      if (!v) v = vs.find(x => x.lang.toLowerCase().startsWith(lang2));
-      if (v) u.voice = v;
-      console.warn('[TTS] 瀏覽器聲音：', (v && v.name) || 'default', text);
-      u.onend = () => res(); u.onerror = () => res();
-      speechSynthesis.speak(u);
+    const clients = ['tw-ob', 'chrome'];
+    let i = 0;
+    const attempt = () => {
+      if (announceToken !== my) return res(false);
+      if (i >= clients.length) return res(false);
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=${clients[i++]}&tl=${G_TL[langKey]}&q=${encodeURIComponent(text)}`;
+      const a = new Audio(url);
+      currentAudio = a; currentResolve = () => res(true);
+      a.onended = () => { currentAudio=null; currentResolve=null; console.log('[TTS] Google：', text); res(true); };
+      a.onerror = () => { currentAudio=null; currentResolve=null; attempt(); };
+      a.play().catch(() => attempt());
     };
-    const playSrc = src => {
-      if (announceToken !== my) return res();
-      const a = new Audio(src);
-      currentAudio = a; currentResolve = res;
-      a.onended = () => { currentAudio=null; currentResolve=null; res(); };
-      a.onerror = () => { currentAudio=null; currentResolve=null; browserSpeak(); };
-      a.play().catch(() => browserSpeak());
-    };
-    const cached = localStorage.getItem(ck);
-    if (cached) return playSrc(cached);
-    edgeFetch(text, langCode).then(data => {
-      if (announceToken !== my) return res();
-      if (data){ console.log('[TTS] Edge neural 女聲：', langCode, text); try{ localStorage.setItem(ck, data); }catch(e){} playSrc(data); }
-      else { console.warn('[TTS] Edge 失敗 → 瀏覽器兜底：', text); browserSpeak(); }
-    });
+    attempt();
   });
+}
+
+/* ===== Chrome 語音兜底（Google 聲音優先） ===== */
+const VOICE_PREF = ['Google','HiuGaai','Xiaoxiao','Aria','Online (Natural)','Neural','Natural'];
+function browserSpeak(text, langCode){
+  return new Promise(res => {
+    const my = announceToken;
+    if (announceToken !== my) return res();
+    if (!('speechSynthesis' in window)) return res();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = langCode; u.rate = 0.95; u.volume = 1;
+    const vs = speechSynthesis.getVoices();
+    const lang2 = langCode.slice(0,2).toLowerCase();
+    let v = null;
+    for (const p of VOICE_PREF){ if (!v) v = vs.find(x => x.name.includes(p) && x.lang.toLowerCase().startsWith(lang2)); }
+    for (const p of VOICE_PREF){ if (!v) v = vs.find(x => x.name.includes(p)); }
+    if (!v) v = vs.find(x => x.lang.toLowerCase().replace('-','_') === langCode.toLowerCase().replace('-','_'));
+    if (!v) v = vs.find(x => x.lang.toLowerCase().startsWith(lang2));
+    if (v) u.voice = v;
+    console.warn('[TTS] Chrome 聲音：', (v && v.name) || 'default', text);
+    u.onend = () => res(); u.onerror = () => res();
+    speechSynthesis.speak(u);
+  });
+}
+
+/* ===== 朗讀文字：Google → Chrome ===== */
+async function speakText(text, langCode){
+  const my = announceToken;
+  if (!text || !text.trim()) return;
+  const langKey = { 'en-US':'en', 'zh-HK':'yue', 'zh-CN':'zh' }[langCode] || 'en';
+  const ok = await googleSpeak(text, langKey);
+  if (!ok && announceToken === my) await browserSpeak(text, langCode);
 }
 
 /* ===== 播放 clip ===== */
@@ -176,7 +126,6 @@ function playClip(path){
 function stopAudio(){
   announceToken++;
   if (currentAudio) currentAudio.pause();
-  if (edgeAbort) edgeAbort();
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   const r = currentResolve; currentAudio=null; currentResolve=null;
   if (r) r();
