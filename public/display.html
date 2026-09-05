@@ -57,14 +57,14 @@ function renderGrid(s){
   document.getElementById('callGrid').innerHTML = ids.map(id => {
     const t = byCounter[id]; const c = counterById(id);
     const active = flashId != null && Number(id) === Number(flashId) && now < flashUntil;
+    const num = String(c.name || '').replace(/\D/g,'') || String(id);
     return `<div class="call-item${active ? ' active' : ''}">
+      <div class="ci-en">Counter</div>
+      <div class="ci-zh">櫃位</div>
+      <div class="ci-id">${num}</div>
       <div class="ci-num">${t ? t.label : '—'}</div>
-      <div class="ci-names">
-        <div class="ci-en">${c.name}</div>
-        <div class="ci-zh">${c.nameZh}</div>
-      </div>
     </div>`;
-  }).join('') || '<div class="call-item"><div class="ci-num">—</div><div class="ci-names"><div class="ci-en muted">No counters</div><div class="ci-zh muted">暫無櫃位</div></div></div>';
+  }).join('') || '<div class="call-item"><div class="ci-en muted">Counter</div><div class="ci-zh muted">櫃位</div><div class="ci-id">—</div><div class="ci-num">—</div></div>';
 }
 
 async function processQueue(){
@@ -90,7 +90,7 @@ document.getElementById('startTts').onclick = () => {
   document.getElementById('startTts').style.display = 'none';
 };
 
-/* 縱向滾動（叫號區，空間不夠時） */
+/* 縱向滾動（叫號區） */
 function autoScrollV(el, step, interval, holdMs){
   step = step || 2; interval = interval || 40; holdMs = holdMs || 2000;
   if (!el) return;
@@ -109,7 +109,7 @@ function autoScrollV(el, step, interval, holdMs){
     }
   }, interval);
 }
-/* 橫向滾動（等候區，單排超出時） */
+/* 橫向滾動（等候區單排） */
 function autoScrollH(el, step, interval, holdMs){
   step = step || 2; interval = interval || 40; holdMs = holdMs || 2000;
   if (!el) return;
