@@ -49,7 +49,10 @@
     <div class="k-stat"><small>Waiting 等候中</small><span id="statWait">0</span> 人</div>
     <div class="k-stat"><small>Est. wait 預計等候</small><span id="statEst">—</span></div>
   </div>
-  <button id="btnReprint" class="btn-gray">REPRINT<br><span class="hk">重印小票</span></button>
+  <div class="row" style="justify-content:center">
+    <button id="btnReprint" class="btn-gray">REPRINT<br><span class="hk">重印小票</span></button>
+    <button id="btnPaper" class="btn-gray">PAPER<br><span class="hk">紙張設定</span></button>
+  </div>
   <div class="k-note" id="note"></div>
 </div>
 
@@ -93,7 +96,29 @@
   </div>
 </div>
 
+<div class="kiosk-wrap" id="paperView" style="display:none">
+  <div class="k-hero-title">Paper 紙張設定</div>
+  <div class="card" id="ppLock" style="max-width:380px; width:100%; text-align:center">
+    <p class="muted" style="margin-bottom:10px">Admin password required 需要管理員密碼</p>
+    <input type="password" id="ppPw" placeholder="Password 密碼">
+    <div class="row" style="margin-top:12px; justify-content:center">
+      <button id="ppUnlock">Unlock 解鎖</button>
+      <button id="ppBack1" class="btn-gray">Back 返回</button>
+    </div>
+    <p id="ppErr" style="color:#dc2626; font-weight:600; margin-top:8px"></p>
+  </div>
+  <div class="card" id="ppChoose" style="display:none; max-width:420px; width:100%; text-align:center">
+    <p class="muted" style="margin-bottom:12px">Current 目前：<b id="ppCur" style="color:var(--text)">80mm</b></p>
+    <div class="row" style="justify-content:center">
+      <button id="pp80" style="min-width:140px">80mm</button>
+      <button id="pp58" class="btn-amber" style="min-width:140px">58mm</button>
+    </div>
+    <div class="row" style="margin-top:14px; justify-content:center"><button id="ppBack2" class="btn-gray">Back 返回</button></div>
+  </div>
+</div>
+
 <div id="printArea"></div>
+<div id="toast" class="toast"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="js/config.js"></script><script src="js/common.js"></script>
@@ -113,6 +138,7 @@ onState(s => {
   $('heroTitle').textContent = s.settings.title;
   $('heroSub').textContent = s.settings.subtitle;
   $('note').textContent = s.settings.note;
+  $('ppCur').textContent = (s.settings.paper === '58') ? '58mm' : '80mm';
 
   const w = waiting();
   const counters = (s.settings.counters || []).length || 1;
@@ -191,8 +217,32 @@ function goHome(){
   takenNo = null;
   $('ticketView').style.display = 'none';
   $('reprintView').style.display = 'none';
+  $('paperView').style.display = 'none';
   $('homeView').style.display = 'flex';
 }
+
+/* ===== 紙張設定 ===== */
+$('btnPaper').onclick = () => {
+  $('homeView').style.display = 'none';
+  $('paperView').style.display = 'flex';
+  $('ppLock').style.display = 'block';
+  $('ppChoose').style.display = 'none';
+  $('ppPw').value = '';
+  $('ppErr').textContent = '';
+};
+$('ppBack1').onclick = goHome;
+$('ppBack2').onclick = goHome;
+$('ppUnlock').onclick = () => {
+  if ($('ppPw').value === ADMIN_PW){
+    $('ppLock').style.display = 'none';
+    $('ppChoose').style.display = 'block';
+  } else {
+    $('ppErr').textContent = 'Wrong password 密碼錯誤';
+  }
+};
+$('ppPw').addEventListener('keydown', e => { if (e.key === 'Enter') $('ppUnlock').onclick(); });
+$('pp80').onclick = async () => { await saveSettings({ ...STATE.settings, paper:'80' }); toast('Paper 80mm saved 已儲存'); };
+$('pp58').onclick = async () => { await saveSettings({ ...STATE.settings, paper:'58' }); toast('Paper 58mm saved 已儲存'); };
 
 /* ===== 重印 ===== */
 $('btnReprint').onclick = () => {
