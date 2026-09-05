@@ -2,6 +2,15 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Admin 管理</title><link rel="stylesheet" href="css/style.css">
 </head><body>
+  <div id="lock" style="position:fixed; inset:0; background:linear-gradient(180deg,#f8fafc,#eef2f7); z-index:999; display:flex; align-items:center; justify-content:center; padding:20px">
+  <div class="card" style="max-width:380px; width:100%; text-align:center">
+    <h3 style="border:none; padding:0">Admin Login 管理員登入</h3>
+    <p class="muted" style="margin:6px 0 12px">Password required 需要密碼先可操作</p>
+    <input type="password" id="pwInput" placeholder="Password 密碼">
+    <button id="pwBtn" style="width:100%; margin-top:12px">Unlock 解鎖</button>
+    <p id="pwErr" style="margin-top:8px; color:#dc2626; font-weight:600"></p>
+  </div>
+</div>
 <div class="topbar"><span>Admin 管理</span><span class="chip" id="sessChip">Loading 載入中…</span></div>
 <div class="admin-wrap">
 
