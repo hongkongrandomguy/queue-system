@@ -58,7 +58,7 @@ a{text-decoration:none}
 .waiting-list .called-chip{cursor:pointer; background:#fef3c7; border-color:#f59e0b; color:#92400e}
 .waiting-list .called-chip.cur{background:#f59e0b; border-color:#f59e0b; color:#fff}
 
-/* Display 大屏幕（保持舞台版設計） */
+/* Display 大屏幕（舞台版） */
 .display-wrap{height:100vh; display:grid; grid-template-rows:auto 1fr auto; padding:12px; gap:12px;
   background:#0b1220; color:#f8fafc; overflow:hidden}
 .display-header{display:flex; justify-content:space-between; align-items:center; font-size:22px; font-weight:700;
@@ -103,7 +103,7 @@ input:focus,select:focus{outline:none; border-color:var(--accent2); box-shadow:0
   padding:10px 18px; border-radius:10px; opacity:0; transition:opacity .3s; pointer-events:none; font-weight:600}
 .toast.show{opacity:1}
 
-/* ===== iPad／平板（641–1024px）自動偵測 ===== */
+/* ===== iPad／平板（641–1024px） ===== */
 @media (min-width:641px) and (max-width:1024px){
   #takeBtn{font-size:34px; border-radius:26px}
   #newTicket{font-size:84px}
@@ -114,7 +114,7 @@ input:focus,select:focus{outline:none; border-color:var(--accent2); box-shadow:0
   .keypad button{font-size:20px; padding:16px}
 }
 
-/* ===== 手機（≤640px）自動偵測 ===== */
+/* ===== 手機（≤640px） ===== */
 @media (max-width:640px){
   .topbar{padding:12px 14px; font-size:15px}
   .card{padding:14px; border-radius:14px}
@@ -133,7 +133,6 @@ input:focus,select:focus{outline:none; border-color:var(--accent2); box-shadow:0
   .row>*{flex:1 1 auto}
   .admin-wrap input:not([type=checkbox]), .admin-wrap select{width:100% !important; max-width:none !important}
   .admin-wrap input[type=checkbox]{width:auto !important}
-  /* Display 手機後備（唔會出界） */
   .display-wrap{padding:8px; gap:8px}
   .display-header{font-size:14px; flex-wrap:wrap; gap:4px}
   .display-wrap .call-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)) !important; gap:8px !important}
@@ -171,4 +170,16 @@ input:focus,select:focus{outline:none; border-color:var(--accent2); box-shadow:0
   #printArea .t-row{font-size:12px; margin:1mm 0}
   #printArea .t-note{font-size:13px; margin-top:4mm; padding-top:2.5mm;
     border-top:0.3mm dashed #666; line-height:1.8; text-align:left}
+  /* ===== 58mm 紙：內容縮小＋靠左 ===== */
+  #printArea.p58{ width:48mm; }
+  #printArea.p58 .t-center{ text-align:left; }
+  #printArea.p58 .t-head img{ width:10mm; height:10mm; }
+  #printArea.p58 .t-school-zh{ font-size:16px; letter-spacing:0.5px; }
+  #printArea.p58 .t-school-en{ font-size:8px; letter-spacing:0.3px; }
+  #printArea.p58 .t-title{ font-size:15px; letter-spacing:3px; }
+  #printArea.p58 .t-title-en{ font-size:9px; letter-spacing:2px; }
+  #printArea.p58 .t-num{ font-size:40px; letter-spacing:1px; }
+  #printArea.p58 .t-row{ font-size:10px; }
+  #printArea.p58 .t-note{ font-size:10px; }
+  #printArea.p58 .t-reprint{ font-size:11px; padding:0.8mm 2mm; }
 }
