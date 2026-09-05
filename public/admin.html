@@ -72,6 +72,14 @@
     <label>Note 提示</label><input id="setNote">
   </div>
 
+  <div class="card">
+    <h3>Data 數據</h3>
+    <div class="row">
+      <button id="btnClearTickets" style="background:linear-gradient(135deg,#ef4444,#b91c1c); box-shadow:0 4px 14px rgba(239,68,68,.35)">Clear Ticket Data 清除籌號記錄</button>
+    </div>
+    <p class="muted" style="margin-top:8px">Deletes all tickets (including reprint sources) and restarts from 001. Settings & counters are kept. 刪除所有已發行籌號（包括重印來源），號碼由 001 重新開始；設定與櫃位不受影響。</p>
+  </div>
+
   <button id="btnSave">SAVE 儲存所有設定</button>
 </div>
 <div id="toast" class="toast"></div>
@@ -138,7 +146,7 @@ $('btnManPlay').onclick = async () => {
   const label = $('manLabel').value.trim().toUpperCase();
   const cid = $('manCounter').value;
   if (!label || !cid) return toast('Please fill ticket & counter 請填寫號碼同櫃位');
-  const seq = await nextSeq('callSeq');   // 參與同一播報隊列
+  const seq = await nextSeq('callSeq');
   await stateRef.child('lastCall').set({
     ticket: { label, no: Number(label.replace(/\D/g,'')) || 0 },
     counter: Number(cid), at: Date.now(), seq, manual: true
@@ -157,6 +165,14 @@ $('btnStopAll').onclick = async () => {
   if (!guard()) return;
   await stopAll();
   toast('All stopped 已全部停止');
+};
+
+/* ===== 清除籌號數據 ===== */
+$('btnClearTickets').onclick = async () => {
+  if (!guard()) return;
+  if (!confirm('Clear ALL ticket data?\n清除所有籌號記錄？\n\nTickets, waiting queue, current broadcast will be removed.\n籌號、等候隊列、目前廣播會一併清除。\nNumbers restart from 001. 號碼由 001 重新開始。\n\nThis cannot be undone. 此操作無法復原。')) return;
+  await clearTickets();
+  toast('Cleared 已清除');
 };
 
 function renderCounters(){
@@ -224,6 +240,7 @@ $('btnSave').onclick = async () => {
   });
   toast('Saved 已儲存');
 };
+/* 平均分鐘：改完自動儲存 */
 $('avgMinutes').addEventListener('change', async function(){
   if (!STATE) return;
   await saveSettings({ ...STATE.settings, counters: counters(), avgMinutes: +this.value || 3 });
