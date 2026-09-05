@@ -4,10 +4,10 @@
 <style>
 .kiosk-wrap{min-height:calc(100vh - 64px); display:flex; flex-direction:column; align-items:center;
   justify-content:center; gap:22px; padding:20px; text-align:center}
-.k-hero-title{font-size:clamp(26px,4vw,44px); font-weight:800; letter-spacing:1px}
+.k-hero-title{font-size:clamp(26px,4vw,44px); font-weight:600; letter-spacing:1px}
 .k-hero-sub{font-size:clamp(15px,2vw,20px); color:var(--muted); margin-top:4px}
 #takeBtn{width:min(560px,90vw); height:min(420px,52vh); border-radius:36px;
-  font-size:clamp(28px,4vw,46px); line-height:1.3; font-weight:800;
+  font-size:clamp(28px,4vw,46px); line-height:1.3; font-weight:600;
   background:linear-gradient(160deg,#3b82f6,#1e3a8a); box-shadow:0 18px 50px rgba(30,64,175,.45);
   animation:breath 2.6s ease-in-out infinite}
 .k-stats{display:flex; gap:14px; flex-wrap:wrap; justify-content:center}
@@ -18,7 +18,7 @@
 .k-ticket-card{background:#fff; border:2px dashed #94a3b8; border-radius:20px; padding:26px 52px;
   box-shadow:var(--shadow)}
 .k-ticket-card .t-label{font-size:13px; font-weight:700; color:var(--muted); letter-spacing:3px}
-.k-ticket-card .t-num{font-size:clamp(72px,12vw,140px); font-weight:800; line-height:1.05;
+.k-ticket-card .t-num{font-size:clamp(72px,12vw,140px); font-weight:600; line-height:1.05;
   background:linear-gradient(135deg,#1d4ed8,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent}
 .k-ticket-card .t-meta{font-size:14px; color:var(--muted); font-weight:600; margin-top:4px}
 .k-back{font-size:13px; color:var(--muted)}
@@ -27,7 +27,7 @@
 .rp-ticket{background:#fff; border:1.5px dashed #94a3b8; border-radius:12px; padding:16px;
   font-size:13px; line-height:1.7; color:#000; text-align:left}
 .rp-ticket .badge{display:inline-block; border:1px solid #000; padding:2px 8px; font-weight:700; margin-bottom:8px}
-.rp-ticket .num{font-size:48px; font-weight:800; text-align:center; margin:6px 0; letter-spacing:2px}
+.rp-ticket .num{font-size:48px; font-weight:600; text-align:center; margin:6px 0; letter-spacing:2px}
 .rp-ticket .center{text-align:center}
 .rp-ticket .b{font-weight:700}
 @media (max-width:640px){
@@ -172,12 +172,11 @@ function ticketHTML(t, reprint){
       <div class="t-row">時段 Session: ${STATE.session.prefix}</div>
     </div>
     <div class="t-note">
-      請妥善保管此籌號票，並密切留意螢幕及廣播<br>
-      Please keep this queue ticket and wait for your turn.<br>
-      若連續呼叫三次均未到場，將視為過號作廢<br>
+      請保留此籌號，並留意大屏幕廣播。<br>
+      Please keep this ticket and wait for the display announcement.<br>
       Your ticket will be canceled after three missed calls.<br>
-      如不慎過號，請重新取號輪候<br>
-      If you miss your turn, please get a new ticket.
+      如叫號時不在現場，將順延至下一位。<br>
+      If you are not present when called, your number will be passed to the next.
     </div>`;
 }
 
