@@ -51,6 +51,20 @@ onState(s => {
     }
   }
 
+    /* 停止信號：只停該櫃位嘅廣播 */
+  const ls = s.lastStop;
+  if (ls && ls.seq !== lastStopSeq){
+    lastStopSeq = ls.seq;
+    pending = pending.filter(x => Number(x.counter) !== Number(ls.counter));   // 未播嘅移除
+    if (annCounter != null && Number(annCounter) === Number(ls.counter)){
+      stopAudio();                                                              // 正播嘅即時停
+      annLabel = null;
+    }
+    if (flashId != null && Number(flashId) === Number(ls.counter)){
+      flashId = null; flashUntil = 0; renderGrid(STATE);
+    }
+  }
+
   if (lc && lc.seq !== lastSeq){
     lastSeq = lc.seq;
     pending.push(lc);
