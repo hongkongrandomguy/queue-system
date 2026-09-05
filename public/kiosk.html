@@ -1,53 +1,108 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Take Ticket 取號</title><link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<title>Kiosk 取號</title><link rel="stylesheet" href="css/style.css">
+<style>
+.kiosk-wrap{min-height:calc(100vh - 64px); display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:22px; padding:20px; text-align:center}
+.k-hero-title{font-size:clamp(26px,4vw,44px); font-weight:800; letter-spacing:1px}
+.k-hero-sub{font-size:clamp(15px,2vw,20px); color:var(--muted); margin-top:4px}
+#takeBtn{width:min(560px,90vw); height:min(420px,52vh); border-radius:36px;
+  font-size:clamp(28px,4vw,46px); line-height:1.3; font-weight:800;
+  background:linear-gradient(160deg,#3b82f6,#1e3a8a); box-shadow:0 18px 50px rgba(30,64,175,.45);
+  animation:breath 2.6s ease-in-out infinite}
+.k-stats{display:flex; gap:14px; flex-wrap:wrap; justify-content:center}
+.k-stat{background:#fff; border:1px solid var(--line); border-radius:14px; padding:10px 18px;
+  font-weight:700; box-shadow:var(--shadow); font-size:18px}
+.k-stat small{display:block; font-weight:600; color:var(--muted); font-size:12px; margin-bottom:2px}
+.k-note{max-width:640px; color:var(--muted); line-height:1.7; font-size:14px}
+/* 取號後：票卡預覽 */
+.k-ticket-card{background:#fff; border:2px dashed #94a3b8; border-radius:20px; padding:26px 52px;
+  box-shadow:var(--shadow)}
+.k-ticket-card .t-label{font-size:13px; font-weight:700; color:var(--muted); letter-spacing:3px}
+.k-ticket-card .t-num{font-size:clamp(72px,12vw,140px); font-weight:800; line-height:1.05;
+  background:linear-gradient(135deg,#1d4ed8,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent}
+.k-ticket-card .t-meta{font-size:14px; color:var(--muted); font-weight:600; margin-top:4px}
+.k-back{font-size:13px; color:var(--muted)}
+@media (max-width:640px){
+  #takeBtn{height:min(300px,44vh); border-radius:26px}
+  .k-ticket-card{padding:18px 28px}
+  .k-stat{font-size:15px; padding:8px 14px}
+}
+</style>
 </head><body>
-<div class="topbar"><span id="sysTitle"></span><span class="chip" id="sessChip"></span></div>
-<div class="center" style="min-height:78vh;gap:24px">
-  <div class="row" style="justify-content:center">
-    <div class="card center" style="min-width:240px">
-      <div class="muted">Waiting Now 現時輪候</div>
-      <div id="waitCount" style="font-size:56px;font-weight:800;color:#38bdf8">0</div>
-      <div class="muted">tickets 籌</div>
-    </div>
-    <div class="card center" style="min-width:240px">
-      <div class="muted">Est. Waiting Time 預計等候時間</div>
-      <div id="waitTime" style="font-size:56px;font-weight:800;color:#facc15">—</div>
-      <div class="muted">minutes 分鐘</div>
-    </div>
+<div class="topbar"><span id="title">Kiosk 取號</span><span class="chip" id="sessChip"></span></div>
+
+<div class="kiosk-wrap" id="homeView">
+  <div>
+    <div class="k-hero-title" id="heroTitle"></div>
+    <div class="k-hero-sub" id="heroSub"></div>
   </div>
-  <button id="takeBtn">TAKE<br>A TICKET<span class="hk" style="display:block;font-size:28px;color:#dbeafe">請按此取號</span></button>
-  <div id="result" class="card center" style="display:none">
-    <div class="muted">Your Ticket Number 你的籌號</div>
-    <div id="newTicket">A001</div>
-    <div id="note" class="muted"></div>
+  <button id="takeBtn">TAKE A TICKET<br>取 號</button>
+  <div class="k-stats">
+    <div class="k-stat"><small>Waiting 等候中</small><span id="statWait">0</span> 人</div>
+    <div class="k-stat"><small>Est. wait 預計等候</small><span id="statEst">—</span></div>
   </div>
+  <div class="k-note" id="note"></div>
 </div>
+
+<div class="kiosk-wrap" id="ticketView" style="display:none">
+  <div class="k-hero-title">Your Ticket 你的籌號</div>
+  <div class="k-ticket-card">
+    <div class="t-label">TICKET 籌號</div>
+    <div class="t-num" id="tvNum">A001</div>
+    <div class="t-meta" id="tvMeta"></div>
+  </div>
+  <div class="k-stats">
+    <div class="k-stat"><small>Ahead 你前面</small><span id="tvAhead">0</span> 人</div>
+    <div class="k-stat"><small>Est. wait 預計等候</small><span id="tvEst">—</span></div>
+  </div>
+  <div class="k-note">Please keep this ticket and watch for the display announcement. 請保留此籌號，並留意大屏幕廣播。</div>
+  <div class="k-back" id="backCount"></div>
+</div>
+
 <div id="printArea"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="js/config.js"></script><script src="js/common.js"></script>
 <script>
-let busy=false;
-onState(s=>{
-  document.getElementById('sessChip').textContent=`Session 時段 ${s.session.prefix}`;
-  document.getElementById('sysTitle').innerHTML=`${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
-  const w=waiting().length;
-  document.getElementById('waitCount').textContent=w;
-  const avg=s.settings.avgMinutes||3;
-  const n=(s.settings.counters||[]).length||1;
-  document.getElementById('waitTime').textContent=w?'~'+Math.ceil(w*avg/n):'0';
+const $ = id => document.getElementById(id);
+let busy = false, backTimer = null, takenNo = null;
+
+onState(s => {
+  $('title').innerHTML = `${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
+  $('sessChip').textContent = 'Session 時段 ' + s.session.prefix;
+  $('heroTitle').textContent = s.settings.title;
+  $('heroSub').textContent = s.settings.subtitle;
+  $('note').textContent = s.settings.note;
+
+  const w = waiting();
+  const counters = (s.settings.counters || []).length || 1;
+  const avg = s.settings.avgMinutes || 3;
+  const est = Math.ceil(w.length * avg / counters);
+  $('statWait').textContent = w.length;
+  $('statEst').textContent = est + ' min';
+  if (takenNo != null){
+    const ahead = w.filter(t => t.no < takenNo).length;
+    $('tvAhead').textContent = ahead;
+    $('tvEst').textContent = Math.ceil(ahead * avg / counters) + ' min';
+  }
 });
-document.getElementById('takeBtn').onclick=async()=>{
-  if(busy)return; busy=true;
-  const t=await takeTicket(); busy=false;
-  document.getElementById('newTicket').textContent=t.label;
-  document.getElementById('note').textContent=STATE.settings.note;
-  document.getElementById('result').style.display='flex';
-  document.getElementById('printArea').innerHTML=`
+
+$('takeBtn').onclick = async () => {
+  if (busy) return; busy = true;
+  const t = await takeTicket();
+  takenNo = t.no;
+
+  /* 螢幕票卡 */
+  $('tvNum').textContent = t.label;
+  $('tvMeta').textContent = `Session ${STATE.session.prefix} · ${t.time}`;
+  $('homeView').style.display = 'none';
+  $('ticketView').style.display = 'flex';
+
+  /* 打印（小票格式完全不變） */
+  $('printArea').innerHTML = `
     <div class="t-head">
-      <img src="img/logo.png" onerror="this.style.display='none'">
+      <img src="img/logo.png" alt="logo">
       <div>
         <div class="t-school-zh">觀塘瑪利諾書院</div>
         <div class="t-school-en">KWUN TONG MARYKNOLL COLLEGE</div>
@@ -61,13 +116,30 @@ document.getElementById('takeBtn').onclick=async()=>{
       <div class="t-row">時段 Session: ${STATE.session.prefix}</div>
     </div>
     <div class="t-note">
-      請保留此籌號，並留意叫號。<br>
-      Please keep this ticket and wait for your turn.<br>
+      請保留此籌號，並留意大屏幕廣播。<br>
+      Please keep this ticket and wait for the display announcement.<br>
       如叫號時不在現場，將順延至下一位。<br>
       If you are not present when called, your number will be passed to the next.
     </div>`;
-  setTimeout(()=>{ window.print(); },200);
-  setTimeout(()=>document.getElementById('result').style.display='none',6000);
+  setTimeout(() => window.print(), 300);
+
+  /* 20 秒自動返回首頁 */
+  let sec = 20;
+  $('backCount').textContent = `Auto return 自動返回：${sec}s`;
+  clearInterval(backTimer);
+  backTimer = setInterval(() => {
+    sec--;
+    $('backCount').textContent = `Auto return 自動返回：${sec}s`;
+    if (sec <= 0) goHome();
+  }, 1000);
+  busy = false;
 };
+
+function goHome(){
+  clearInterval(backTimer);
+  takenNo = null;
+  $('ticketView').style.display = 'none';
+  $('homeView').style.display = 'flex';
+}
 </script>
 </body></html>
