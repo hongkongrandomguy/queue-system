@@ -18,10 +18,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="js/config.js"></script><script src="js/common.js"></script><script src="js/tts.js"></script>
 <script>
-let lastSeq = 0;
-let pending = [];
-let announcing = false;
+let lastSeq = 0, lastUndoSeq = 0;
+let pending = [], announcing = false;
 let flashId = null, flashUntil = 0;
+let annLabel = null, annCounter = null;
 
 onState(s => {
   document.getElementById('footerTitle').innerHTML = `${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
@@ -35,6 +35,20 @@ onState(s => {
   if (lc){
     const c = counterById(lc.counter);
     document.getElementById('ticker').textContent = `Now Calling 請到 ${lc.ticket.label} → ${c.name}`;
+  }
+
+  /* 撤回信號：未播嘅取消、正播嘅即時停 */
+  const lu = s.lastUndo;
+  if (lu && lu.seq !== lastUndoSeq){
+    lastUndoSeq = lu.seq;
+    pending = pending.filter(x => !(x.ticket.label === lu.label && Number(x.counter) === Number(lu.counter)));
+    if (annLabel === lu.label && Number(annCounter) === Number(lu.counter)){
+      stopAudio();
+      annLabel = null;
+    }
+    if (flashId != null && Number(flashId) === Number(lu.counter)){
+      flashId = null; flashUntil = 0; renderGrid(STATE);
+    }
   }
 
   if (lc && lc.seq !== lastSeq){
@@ -76,11 +90,13 @@ async function processQueue(){
     flashId = lc.counter; flashUntil = Date.now() + 8000;
     renderGrid(STATE);
     setTimeout(() => renderGrid(STATE), 8100);
+    annLabel = lc.ticket.label; annCounter = lc.counter;
     await announce(STATE.settings.tts.languages, { ...STATE.settings.tts, phrases: {
       en:  buildPhrase('en',  lc.ticket.label, c),
       yue: buildPhrase('yue', lc.ticket.label, c),
       zh:  buildPhrase('zh',  lc.ticket.label, c)
     }}, false);
+    annLabel = null;
   }
   announcing = false;
 }
@@ -90,7 +106,6 @@ document.getElementById('startTts').onclick = () => {
   document.getElementById('startTts').style.display = 'none';
 };
 
-/* 縱向滾動（叫號區） */
 function autoScrollV(el, step, interval, holdMs){
   step = step || 2; interval = interval || 40; holdMs = holdMs || 2000;
   if (!el) return;
@@ -100,16 +115,10 @@ function autoScrollV(el, step, interval, holdMs){
     if (holding) return;
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2){
       holding = true;
-      setTimeout(() => {
-        el.scrollTo({ top:0, behavior:'smooth' });
-        setTimeout(() => { holding = false; }, 900);
-      }, holdMs);
-    } else {
-      el.scrollTop += step;
-    }
+      setTimeout(() => { el.scrollTo({ top:0, behavior:'smooth' }); setTimeout(() => { holding = false; }, 900); }, holdMs);
+    } else { el.scrollTop += step; }
   }, interval);
 }
-/* 橫向滾動（等候區單排） */
 function autoScrollH(el, step, interval, holdMs){
   step = step || 2; interval = interval || 40; holdMs = holdMs || 2000;
   if (!el) return;
@@ -119,13 +128,8 @@ function autoScrollH(el, step, interval, holdMs){
     if (holding) return;
     if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 2){
       holding = true;
-      setTimeout(() => {
-        el.scrollTo({ left:0, behavior:'smooth' });
-        setTimeout(() => { holding = false; }, 900);
-      }, holdMs);
-    } else {
-      el.scrollLeft += step;
-    }
+      setTimeout(() => { el.scrollTo({ left:0, behavior:'smooth' }); setTimeout(() => { holding = false; }, 900); }, holdMs);
+    } else { el.scrollLeft += step; }
   }, interval);
 }
 autoScrollV(document.getElementById('callGrid'));
