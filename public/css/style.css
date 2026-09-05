@@ -78,6 +78,9 @@ a{text-decoration:none}
   font-size:54px; font-weight:700; letter-spacing:2px; line-height:1; color:#f8fafc}
 .call-item.active .ci-num{color:#fbbf24; animation:flash 1.2s ease-in-out 6}
 @keyframes flash{0%,100%{opacity:1}50%{opacity:.25}}
+.paused-txt{display:flex; flex-direction:column; align-items:center; gap:2px;
+  color:#f87171; font-size:30px; font-weight:700; letter-spacing:2px; line-height:1.15}
+.paused-txt small{font-size:16px; letter-spacing:2px; font-weight:600; color:#fca5a5}
 .queue-panel{flex:0 0 auto}
 .queue-panel h2{margin-bottom:8px; font-size:22px; font-weight:700; letter-spacing:1px}
 .display-wrap .queue-items{display:flex; flex-direction:row; gap:10px; overflow-x:auto; overflow-y:hidden;
@@ -140,6 +143,8 @@ input:focus,select:focus{outline:none; border-color:var(--accent2); box-shadow:0
   .call-item .ci-en,.call-item .ci-zh{font-size:14px !important}
   .call-item .ci-id{font-size:28px !important}
   .call-item .ci-num{font-size:28px !important; letter-spacing:1px !important}
+  .paused-txt{font-size:18px; letter-spacing:1px}
+  .paused-txt small{font-size:11px}
   .queue-panel h2{font-size:16px}
   .queue-items span{font-size:16px; padding:6px 10px}
   #startTts{font-size:14px; padding:10px 14px}
