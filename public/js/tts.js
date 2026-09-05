@@ -11,16 +11,16 @@ const TTS_DIG = {
   zh:['零','一','二','三','四','五','六','七','八','九']
 };
 const TTS_WORDS = {
-  en:{ Ticket:'Ticket number', counter:'please go to counter' },
+  en:{ Ticket:'Ticket', counter:'please go to counter' },
   yue:{ ticket:'籌號', goto:'請到', suffix:'號櫃位' },
-  zh:{ ticket:'号码', goto:'请到', suffix:'号柜台' }
+  zh:{ ticket:'筹号', goto:'请到', suffix:'号柜台' }
 };
 const EDGE_VOICES = { 'en-US':'en-US-AriaNeural', 'zh-HK':'zh-HK-HiuGaaiNeural', 'zh-CN':'zh-CN-XiaoxiaoNeural' };
 /* 自定義文本中可匹配到現有錄音嘅詞 */
 const CLIP_WORDS = {
-  en:{ 'please go to counter':'en/counter', 'ticket number':'en/Ticket' },
+  en:{ 'please go to counter':'en/counter', 'ticket':'en/Ticket' },
   yue:{ '請到':'yue/goto', '號櫃位':'yue/suffix', '籌號':'yue/ticket' },
-  zh:{ '请到':'zh/goto', '号柜台':'zh/suffix', '号码':'zh/ticket' }
+  zh:{ '请到':'zh/goto', '号柜台':'zh/suffix', '筹号':'zh/ticket' }
 };
 
 function ttsInfoFor(path){
@@ -154,15 +154,16 @@ function literalSeq(lang, text){
   const items = []; let buf = '';
   const words = CLIP_WORDS[lang] || {};
   const keys = Object.keys(words).sort((a,b) => b.length - a.length);
+  const lower = text.toLowerCase();
   const flush = () => { if (buf.trim()){ items.push({ t: buf.trim() }); buf = ''; } };
   let i = 0;
   while (i < text.length){
     const ch = text[i];
     if (/[0-9]/.test(ch)){ flush(); items.push({ c: lang + '/' + ch }); i++; continue; }
-    if (/[A-Za-z]/.test(ch)){ flush(); items.push({ c: lang + '/' + ch.toUpperCase() }); i++; continue; }
     let matched = null;
-    for (const k of keys){ if (text.startsWith(k, i)){ matched = k; break; } }
+    for (const k of keys){ if (lower.startsWith(k.toLowerCase(), i)){ matched = k; break; } }
     if (matched){ flush(); items.push({ c: words[matched] }); i += matched.length; continue; }
+    if (/[A-Za-z]/.test(ch)){ flush(); items.push({ c: lang + '/' + ch.toUpperCase() }); i++; continue; }
     buf += ch; i++;
   }
   flush();
