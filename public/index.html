@@ -2,14 +2,17 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Queue System 排隊系統</title><link rel="stylesheet" href="css/style.css">
 </head><body>
-<div class="center" style="min-height:100vh">
-  <h1>Queue Ticket System <span class="hk">排隊取號系統</span></h1>
-  <div style="display:grid;gap:12px;width:min(420px,90vw)">
-    <a href="kiosk.html"><button style="width:100%">Kiosk 取號</button></a>
-    <a href="display.html"><button style="width:100%">Display 大屏幕</button></a>
-    <a href="counter.html?id=1"><button style="width:100%">Counter 1 一號櫃位</button></a>
-    <a href="counter.html?id=2"><button style="width:100%">Counter 2 二號櫃位</button></a>
-    <a href="admin.html"><button style="width:100%" class="btn-gray">Admin 管理</button></a>
+<div class="topbar"><span>KTMC Queue System 排隊系統</span><span class="chip">Live</span></div>
+<div class="admin-wrap">
+  <div class="card center" style="text-align:center">
+    <h3 style="border:none; padding:0; font-size:24px">Welcome 歡迎使用</h3>
+    <p class="muted">Choose a station 選擇終端</p>
+  </div>
+  <div class="btn-grid">
+    <a href="kiosk.html"><button style="width:100%">TAKE TICKET<br><span class="hk">取號機</span></button></a>
+    <a href="display.html"><button class="btn-green" style="width:100%">DISPLAY<br><span class="hk">大屏幕</span></button></a>
+    <a href="counter.html?id=1"><button class="btn-amber" style="width:100%">COUNTER<br><span class="hk">櫃位 iPad</span></button></a>
+    <a href="admin.html"><button class="btn-gray" style="width:100%">ADMIN<br><span class="hk">管理</span></button></a>
   </div>
 </div>
 </body></html>
