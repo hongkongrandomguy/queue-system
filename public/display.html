@@ -19,7 +19,7 @@
 <script src="js/config.js"></script><script src="js/common.js"></script><script src="js/tts.js"></script>
 <script>
 let lastSeq = 0;
-let pending = [];        // 廣播隊列：多個櫃位同時叫號 → 排隊逐個播，唔會疊聲
+let pending = [];
 let announcing = false;
 let flashId = null, flashUntil = 0;
 
@@ -58,10 +58,13 @@ function renderGrid(s){
     const t = byCounter[id]; const c = counterById(id);
     const active = flashId != null && Number(id) === Number(flashId) && now < flashUntil;
     return `<div class="call-item${active ? ' active' : ''}">
-      <div class="ci-name">${c.name} <span class="hk">${c.nameZh}</span></div>
       <div class="ci-num">${t ? t.label : '—'}</div>
+      <div class="ci-names">
+        <div class="ci-en">${c.name}</div>
+        <div class="ci-zh">${c.nameZh}</div>
+      </div>
     </div>`;
-  }).join('') || '<div class="call-item"><div class="ci-name muted">No counters 暫無櫃位</div><div class="ci-num">—</div></div>';
+  }).join('') || '<div class="call-item"><div class="ci-num">—</div><div class="ci-names"><div class="ci-en muted">No counters</div><div class="ci-zh muted">暫無櫃位</div></div></div>';
 }
 
 async function processQueue(){
@@ -87,8 +90,8 @@ document.getElementById('startTts').onclick = () => {
   document.getElementById('startTts').style.display = 'none';
 };
 
-/* 位置不夠 → 自動連續滾動；夠 → 靜止 */
-function autoScroll(el, step, interval, holdMs){
+/* 縱向滾動（叫號區，空間不夠時） */
+function autoScrollV(el, step, interval, holdMs){
   step = step || 2; interval = interval || 40; holdMs = holdMs || 2000;
   if (!el) return;
   let holding = false;
@@ -106,7 +109,26 @@ function autoScroll(el, step, interval, holdMs){
     }
   }, interval);
 }
-autoScroll(document.getElementById('callGrid'));
-autoScroll(document.getElementById('queueItems'));
+/* 橫向滾動（等候區，單排超出時） */
+function autoScrollH(el, step, interval, holdMs){
+  step = step || 2; interval = interval || 40; holdMs = holdMs || 2000;
+  if (!el) return;
+  let holding = false;
+  setInterval(() => {
+    if (el.scrollWidth <= el.clientWidth + 4){ if (el.scrollLeft) el.scrollLeft = 0; return; }
+    if (holding) return;
+    if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 2){
+      holding = true;
+      setTimeout(() => {
+        el.scrollTo({ left:0, behavior:'smooth' });
+        setTimeout(() => { holding = false; }, 900);
+      }, holdMs);
+    } else {
+      el.scrollLeft += step;
+    }
+  }, interval);
+}
+autoScrollV(document.getElementById('callGrid'));
+autoScrollH(document.getElementById('queueItems'));
 </script>
 </body></html>
