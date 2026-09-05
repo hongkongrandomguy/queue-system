@@ -1,15 +1,21 @@
-/* 自訂音檔廣播版（音檔喺根目錄 /audio/） */
+/* 自訂音檔廣播版（自動相容 audio/ 或 ../audio/ 兩種位置） */
 const AUDIO_EXT = '.mp3';
 let currentAudio = null;
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 function playClip(path){
   return new Promise(res => {
-    const a = new Audio('../audio/' + path + AUDIO_EXT);
-    currentAudio = a;
-    a.onended = () => { currentAudio = null; res(); };
-    a.onerror = () => { currentAudio = null; res(); };
-    a.play().catch(() => res());
+    const tries = ['audio/' + path + AUDIO_EXT, '../audio/' + path + AUDIO_EXT];
+    let i = 0;
+    const attempt = () => {
+      if (i >= tries.length) return res();          // 兩邊都冇檔 → 靜默跳過
+      const a = new Audio(tries[i++]);
+      currentAudio = a;
+      a.onended = () => { currentAudio = null; res(); };
+      a.onerror = () => { currentAudio = null; attempt(); };   // 404 → 試下一個位置
+      a.play().catch(() => attempt());
+    };
+    attempt();
   });
 }
 function stopAudio(){ if (currentAudio){ currentAudio.pause(); currentAudio = null; } }
