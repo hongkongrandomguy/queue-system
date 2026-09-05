@@ -92,8 +92,8 @@ function renderGrid(s){
 
     /* 暫停服務判斷 */
     const paused = s.counters && s.counters[id] && s.counters[id].paused;
-    const numHtml = paused
-      ? '<span class="paused-txt">暫停服務<small>Suspended</small></span>'
+        const numHtml = paused
+      ? '<span class="paused-txt">Suspended<small>暫停服務</small></span>'
       : (t ? t.label : '—');
 
     return `<div class="call-item${active ? ' active' : ''}">
