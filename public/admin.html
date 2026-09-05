@@ -89,6 +89,15 @@
   </div>
 
   <div class="card">
+    <h3>Print 小票紙張</h3>
+    <div class="row">
+      <label style="margin:0; display:flex; align-items:center; gap:6px"><input type="radio" name="paper" id="paper80" value="80" style="width:auto"> 80mm</label>
+      <label style="margin:0; display:flex; align-items:center; gap:6px"><input type="radio" name="paper" id="paper58" value="58" style="width:auto"> 58mm</label>
+    </div>
+    <p class="muted" style="margin-top:6px">58mm: content shrinks & left-aligned. 58mm 會自動縮小內容並靠左排版。</p>
+  </div>
+
+  <div class="card">
     <h3>Data 數據</h3>
     <div class="row">
       <button id="btnClearTickets" style="background:linear-gradient(135deg,#ef4444,#b91c1c); box-shadow:0 4px 14px rgba(239,68,68,.35)">Clear Ticket Data 清除籌號記錄</button>
@@ -159,6 +168,8 @@ onState(s => {
     $('setSubtitle').value = s.settings.subtitle;
     $('setNote').value = s.settings.note;
     $('avgMinutes').value = s.settings.avgMinutes || 3;
+    $('paper58').checked = s.settings.paper === '58';
+    $('paper80').checked = s.settings.paper !== '58';
     $('prefixInput').placeholder = s.session.prefix;
   }
 });
@@ -270,6 +281,7 @@ $('btnSave').onclick = async () => {
     note: $('setNote').value,
     counters: counters(),
     avgMinutes: +$('avgMinutes').value || 3,
+    paper: $('paper58').checked ? '58' : '80',
     tts: formTts()
   });
   toast('Saved 已儲存');
