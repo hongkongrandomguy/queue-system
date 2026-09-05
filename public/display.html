@@ -3,16 +3,14 @@
 <title>Display 大屏幕</title><link rel="stylesheet" href="css/style.css">
 </head><body>
 <div class="display-wrap">
-  <div class="display-main">
-    <div class="card call-grid" id="callGrid"></div>
-    <div class="card queue-panel">
-      <h2>Waiting 等候中</h2>
-      <div class="queue-items" id="queueItems"></div>
-    </div>
-  </div>
-  <div class="display-footer">
+  <div class="display-header">
     <span id="footerTitle"></span>
     <span class="ticker" id="ticker"></span>
+  </div>
+  <div class="card call-grid" id="callGrid"></div>
+  <div class="card queue-panel">
+    <h2>Waiting 等候中</h2>
+    <div class="queue-items" id="queueItems"></div>
   </div>
 </div>
 <button id="startTts">START SOUND 開啟廣播聲音</button>
@@ -28,20 +26,17 @@ let flashId = null, flashUntil = 0;
 onState(s => {
   document.getElementById('footerTitle').innerHTML = `${s.settings.title} <span class="hk">${s.settings.subtitle}</span>`;
 
-  /* 等候區 */
   const w = waiting();
   document.getElementById('queueItems').innerHTML = w.map(t=>`<span>${t.label}</span>`).join('') || '<span class="muted">No one waiting 暫無等候</span>';
 
   renderGrid(s);
 
-  /* 底部跑馬燈（顯示最新叫號） */
   const lc = s.lastCall;
   if (lc){
     const c = counterById(lc.counter);
     document.getElementById('ticker').textContent = `Now Calling 請到 ${lc.ticket.label} → ${c.name}`;
   }
 
-  /* 新叫號 → 入隊，由處理器逐個播 */
   if (lc && lc.seq !== lastSeq){
     lastSeq = lc.seq;
     pending.push(lc);
@@ -49,7 +44,6 @@ onState(s => {
   }
 });
 
-/* 已叫號格仔渲染 */
 function renderGrid(s){
   const byCounter = {};
   ticketsArr().forEach(t => {
@@ -70,27 +64,26 @@ function renderGrid(s){
   }).join('') || '<div class="call-item"><div class="ci-name muted">No counters 暫無櫃位</div><div class="ci-num">—</div></div>';
 }
 
-/* 廣播隊列處理器：一次只播一段，播完先播下一段 */
 async function processQueue(){
   if (announcing) return;
   announcing = true;
   while (pending.length){
     const lc = pending.shift();
     const c = counterById(lc.counter);
-    flashId = lc.counter; flashUntil = Date.now() + 8000;   // 閃爍跟住而家播緊嘅叫號
+    flashId = lc.counter; flashUntil = Date.now() + 8000;
     renderGrid(STATE);
-    setTimeout(() => renderGrid(STATE), 8100);              // 到時自動熄閃爍
+    setTimeout(() => renderGrid(STATE), 8100);
     await announce(STATE.settings.tts.languages, { ...STATE.settings.tts, phrases: {
       en:  buildPhrase('en',  lc.ticket.label, c),
       yue: buildPhrase('yue', lc.ticket.label, c),
       zh:  buildPhrase('zh',  lc.ticket.label, c)
-    }}, false);   // false = 唔打斷，順序播
+    }}, false);
   }
   announcing = false;
 }
 
 document.getElementById('startTts').onclick = () => {
-  chime();   // 解鎖瀏覽器音訊
+  chime();
   document.getElementById('startTts').style.display = 'none';
 };
 
