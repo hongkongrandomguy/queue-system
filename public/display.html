@@ -83,15 +83,24 @@ function renderGrid(s){
   const ids = (s.settings.counters||[]).map(c => c.id);
   Object.keys(byCounter).forEach(id => { if (!ids.includes(Number(id))) ids.push(Number(id)); });
   const now = Date.now();
+  
   document.getElementById('callGrid').innerHTML = ids.map(id => {
-    const t = byCounter[id]; const c = counterById(id);
+    const t = byCounter[id]; 
+    const c = counterById(id);
     const active = flashId != null && Number(id) === Number(flashId) && now < flashUntil;
     const num = String(c.name || '').replace(/\D/g,'') || String(id);
+    
+    /* 暫停服務判斷 */
+    const paused = s.counters && s.counters[id] && s.counters[id].paused;
+    const numHtml = paused 
+      ? '<span style="color:#f87171; font-size:32px; line-height:1.1">暫停服務<br><span style="font-size:20px; letter-spacing:1px">Suspended</span></span>' 
+      : (t ? t.label : '—');
+
     return `<div class="call-item${active ? ' active' : ''}">
       <div class="ci-en">Counter</div>
       <div class="ci-zh">櫃位</div>
       <div class="ci-id">${num}</div>
-      <div class="ci-num">${t ? t.label : '—'}</div>
+      <div class="ci-num">${numHtml}</div>
     </div>`;
   }).join('') || '<div class="call-item"><div class="ci-en muted">Counter</div><div class="ci-zh muted">櫃位</div><div class="ci-id">—</div><div class="ci-num">—</div></div>';
 }
